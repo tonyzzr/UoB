@@ -40,9 +40,9 @@ class MultiViewBmode:
     _, h, w = self.view_images.size()
     self.image_shape = (h, w)
 
-    origin_h, origin_w = self.origin
-    self.origin = (origin_h + padding_top, 
-                   origin_w + padding_left)
+    x0, y0 = self.origin
+    self.origin = (x0 + padding_left, 
+                   y0 + padding_top)
 
     return
 
