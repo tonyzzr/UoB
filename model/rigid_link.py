@@ -114,3 +114,9 @@ class RigidLink:
     ax.invert_yaxis()
 
     return ax
+
+def forward_kinematics(self,):
+  self.calc_rela_poses()
+  self.calc_global_poses()
+  self.calc_joint_locations()
+  return
