@@ -93,3 +93,32 @@ class Bmode2MultiViewBmode:
         mat_source_file = mat_source_file,
         bmode_config_file = bmode_config_file,
     )
+
+
+def plot_image_and_transducer_positions(mvbs:dict,):
+  for key in mvbs.keys():
+    n_view = mvbs[key].n_view
+    origin = mvbs[key].origin
+    aperture_size = mvbs[key].aperture_size
+
+    # transducer element coordinates
+    x0, y0 = origin
+    x1, y1 = x0 + aperture_size, y0
+    transducer_element_coordinates_x = np.linspace(x0, x1, 32)
+    transducer_element_coordinates_y = np.linspace(y0, y1, 32)
+
+    # mvbs[key].transducer_element_coordinates_x = transducer_element_coordinates_x
+    # mvbs[key].transducer_element_coordinates_y = transducer_element_coordinates_y
+
+    print(mvbs[key].mat_source_file)
+    fig, ax = plt.subplots(1, n_view, figsize=(24, 3))
+
+    for i in range(n_view):
+      ax[i].imshow(mvbs[key].view_images[i, ...])
+      ax[i].axis('off')
+      # ax[i].scatter(x0, y0, c='r')
+      # ax[i].scatter(x1, y1, c='r')
+      ax[i].scatter(transducer_element_coordinates_x,
+                    transducer_element_coordinates_y, c='r', s=1);
+
+    plt.show()
