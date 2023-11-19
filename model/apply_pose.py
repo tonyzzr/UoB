@@ -1,6 +1,6 @@
 import cv2
 
-def cv2rigid_transform(imgs, matrices3d):
+def cv2apply_poses(imgs, matrices3d):
   transformed_imgs = torch.zeros_like(imgs)
 
   rc_ind = [0, 1, 3]
