@@ -2,7 +2,7 @@ import cv2
 import torch
 
 def cv2apply_poses(imgs, matrices3d):
-  assert len(imgs.shape) == 3, "img dimension should be (N, H, W)"
+  assert len(imgs.shape) == 3, "imgs dimension should be (N, H, W)"
   
   transformed_imgs = torch.zeros_like(imgs)
 
