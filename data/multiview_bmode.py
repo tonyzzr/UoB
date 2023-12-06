@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 from .mat import MatData # change to relative path .mat later in github
 from .bmode import Bmode
@@ -182,3 +183,22 @@ class MultiViewBmodeSeg(MultiViewBmode):
                                    file_path)
 
     return
+
+
+def create_cmap(num_parts):
+    color_list = ["red", "yellow", "blue", "lime", "darkviolet", "magenta", "cyan", "brown", "yellow"]
+    cmap = 'jet' if num_parts > 10 else ListedColormap(color_list[:num_parts])
+    return cmap
+
+def plot_image_and_segmentation_masks(mvbsegs:dict,):
+  for key in mvbsegs.keys():
+    n_view = mvbsegs[key].n_view
+    cmap = create_cmap(mvbsegs[key].n_class)
+
+    fig, ax = plt.subplots(1, n_view, figsize=(24, 3))
+    for i in range(n_view):
+      ax[i].imshow(mvbsegs[key].view_images[i, ...], cmap = 'gray')
+      ax[i].imshow(mvbsegs[key].seg_masks[i, ...], cmap = cmap, alpha = 0.5)
+      ax[i].axis('off')
+
+    plt.show()
