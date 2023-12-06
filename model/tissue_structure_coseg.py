@@ -1,3 +1,5 @@
+import torch
+
 import yaml
 import random
 from operator import itemgetter
