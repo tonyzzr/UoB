@@ -1,6 +1,7 @@
-#@title TissueStructureCosegmentation class
 import yaml
 import random
+from operator import itemgetter
+
 from part_cosegmentation import find_part_cosegmentation
 
 
@@ -25,7 +26,10 @@ class TissueStructureCosegmentation:
     for key in self.image_paths_dict.keys():
       path_list += self.image_paths_dict[key]
 
-    return path_list.sort()
+    path_list.sort()
+    # print(path_list)
+
+    return path_list
 
   def _load_configs_from_yaml(self, config_path:str):
     with open(config_path, 'r') as f:
@@ -44,12 +48,47 @@ class TissueStructureCosegmentation:
     )
     return part_imgs, pil_imgs
 
-  def _find_mask_centroids(self, ):
-    raise NotImplementedError
+  def _find_mask_centroids(self, class_no = 0):
+    '''
+    find centroid of a segmentation mask of a class
+    '''
+    rs, cs = [], []
+    for view_index in range(len(self.image_paths)):
+      masks = np.array(self.part_imgs[view_index])
+      r, c = np.where(masks == class_no)
+
+      rs.append(r)
+      cs.append(c)
+
+    rs = np.concatenate(rs)
+    cs = np.concatenate(cs)
+    centroid = np.array([np.mean(rs), np.mean(cs)])
+
+    return centroid
+
 
   def _sort_class_no_by_mask_centroid(self, ):
-    # raise NotImplementedError
-    return self.part_imgs # temporal solution - update later
+    class_nos = list(range(self.configs['num_parts']))
+    r_centroids = [self._find_mask_centroids(class_no = class_no)[0] \
+                   for class_no in class_nos]
+
+    zipped = zip(class_nos, r_centroids)
+    sorted_zipped = sorted(zipped, key=lambda x: x[1])
+    sorted_class_nos, r_centroids = zip(*sorted_zipped)
+
+    return sorted_class_nos
+
+  def _fill_segmentation_masks_with_sorted_class_no(self, ):
+    sorted_class_nos = self._sort_class_no_by_mask_centroid()
+    new_masks = [np.full_like(mask, np.nan) for mask in self.part_imgs]
+
+    for i, mask in enumerate(new_masks):
+      for j in range(len(sorted_class_nos)):
+        original_label = j
+        sorted_label = sorted_class_nos[j]
+        mask[self.part_imgs[i] == original_label] = sorted_label
+
+    return new_masks
 
   def _set_random_seed(self, seed=6):
     torch.manual_seed(seed)
@@ -67,12 +106,17 @@ class TissueStructureCosegmentation:
 
   def _part_imgs_to_segmentation_masks(self, ):
 
-    masks = self._sort_class_no_by_mask_centroid(self.part_imgs)
+    masks = self._fill_segmentation_masks_with_sorted_class_no()
 
     for key in self.image_paths_dict.keys():
       indices = [i for i, path in enumerate(self.image_paths) \
                   if key in path]
-      self.segmentation_masks[key] = masks[indices]
+      # print(key, indices, self.image_paths[i])
+
+      masks_tuple = itemgetter(*indices)(masks)
+      masks_tensor = torch.tensor(masks_tuple)
+
+      self.segmentation_masks[key] = masks_tensor
 
     return
 
@@ -80,8 +124,6 @@ class TissueStructureCosegmentation:
   def run(self, ):
     self._set_random_seed()
     self.part_imgs, self.pil_imgs = self._run_part_cosegmentation()
-    self.segmentation_masks = self._part_imgs_to_segmentation_masks()
+    self._part_imgs_to_segmentation_masks()
 
-
-
-    return self.segmentation_masks
+    return
