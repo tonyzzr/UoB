@@ -122,3 +122,63 @@ def plot_image_and_transducer_positions(mvbs:dict,):
                     transducer_element_coordinates_y, c='r', s=1);
 
     plt.show()
+
+
+class MultiViewBmodeSeg(MultiViewBmode):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+    # initialize
+    self.n_class = None
+    self.seg_masks = None
+    self.seg_configs = None
+
+
+  def zero_pad_2d(self, padding:tuple):
+    '''
+      padding: (padding_left, padding_right, padding_top, padding_bottom)
+    '''
+    padding_left, padding_right, padding_top, padding_bottom = padding
+
+    # 1 - update views and view masks (torch.nn.ZeroPad2d)
+    zero_pad = torch.nn.ZeroPad2d(padding)
+    self.view_images = zero_pad(self.view_images)
+    self.view_masks = zero_pad(self.view_masks)
+
+    # add padding of segmentation masks -- pad by NaN?
+    nan_pad = torch.nn.ConstantPad2d(padding, float('nan'))
+    self.seg_masks = nan_pad(self.seg_masks)
+
+    # 2 - update image_shape and origin
+    _, h, w = self.view_images.size()
+    self.image_shape = (h, w)
+
+    x0, y0 = self.origin
+    self.origin = (x0 + padding_left,
+                  y0 + padding_top)
+
+    return
+
+  def resize(self, size:tuple):
+    '''
+      size: (height, width)
+    '''
+    h, w = size
+
+    raise NotImplementedError
+
+  def save_view_images(self, dir):
+    assert dir[-1] == '/'
+
+    for i in range(self.n_view):
+      file_path = dir + f'view_{i}.png'
+
+      # rescale data to image
+      image_to_save = self.view_images[i, ...]
+      image_to_save /= image_to_save.max()
+
+      # save image -- torchvision.utils.save_image can only deal with pixel value within (0, 1)
+      torchvision.utils.save_image(image_to_save,
+                                   file_path)
+
+    return
