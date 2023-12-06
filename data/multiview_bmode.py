@@ -4,6 +4,9 @@
 from dataclasses import dataclass
 
 import torch
+import torchvision
+import torch.nn.functional as F
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
