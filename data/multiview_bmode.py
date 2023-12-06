@@ -64,7 +64,7 @@ class MultiViewBmode:
 
 
 
-
+# ------ #
 class Bmode2MultiViewBmode:
 
   def __init__(self, b_mode:Bmode, ):
@@ -127,7 +127,7 @@ def plot_image_and_transducer_positions(mvbs:dict,):
 
     plt.show()
 
-
+# ------ #
 class MultiViewBmodeSeg(MultiViewBmode):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -137,6 +137,7 @@ class MultiViewBmodeSeg(MultiViewBmode):
     self.seg_masks = None
     self.seg_configs = None
 
+  # add a __str__ method here
 
   def zero_pad_2d(self, padding:tuple):
     '''
