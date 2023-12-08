@@ -1,6 +1,11 @@
 '''
   This part of code should be placed in 'data/bmode.py'.
 '''
+import os
+import cv2
+import glob
+import shutil
+
 from dataclasses import dataclass
 
 import torch
@@ -8,8 +13,12 @@ import torchvision
 import torch.nn.functional as F
 
 import numpy as np
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+from ipywidgets import interactive, IntSlider
+
+from tqdm import tqdm
 
 from .mat import MatData # change to relative path .mat later in github
 from .bmode import Bmode
@@ -206,3 +215,138 @@ def plot_image_and_segmentation_masks(mvbsegs:dict,):
       ax[i].axis('off')
 
     plt.show()
+
+
+
+
+class MultiViewBmodeVideo(MultiViewBmode):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    '''
+      self.view_images will be in shape (n_frame, n_view, h, w)
+      self.view_masks will be in shape (1, n_view, h, w)
+    '''
+
+    # initialize
+    self.n_frame = None
+    self.mat_source_dir = None
+
+# ------ # 
+class Bmode2MultiViewBmodeVideo(Bmode2MultiViewBmode):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+  def convert(self, mat_file_dir = None, bmode_config_path = None):
+    n_frame, n_view, h, w = self.b_mode.b_img_seq.shape
+
+    origin_w = self.b_mode.trans_pos[0].left_edge_coord[0, 0]
+    origin_h = self.b_mode.trans_pos[0].left_edge_coord[1, 0]
+
+    aperture_size = self.b_mode.trans_pos[0].right_edge_coord[0, 0] - \
+                    self.b_mode.trans_pos[0].left_edge_coord[0, 0]
+    
+    view_images = torch.tensor(self.b_mode.b_img_seq)
+    view_masks = torch.tensor(self.b_mode.mask_seq)
+
+    mat_source_dir = mat_file_dir
+    bmode_config_file = bmode_config_path
+
+    mvbv =  MultiViewBmodeVideo(
+        n_view = n_view,
+        image_shape = (h, w),
+        origin = (origin_w, origin_h),
+        aperture_size = aperture_size,
+
+        view_images = view_images,
+        view_masks = view_masks,
+
+        mat_source_file = 'multiple files, refer to .mat_source_dir',
+        bmode_config_file = bmode_config_file,
+    )
+
+    mvbv.n_frame = n_frame
+    mvbv.mat_source_dir = mat_source_dir
+
+    return mvbv
+
+  def __str__(self, ):
+    return f'MultiViewBmodeVideo - {self.__dict__.keys()}'
+
+
+def plot_single_frame_in_multiview_bmode_video(mvbvs:dict, frame_index=0, ax=None):
+  if ax is None:
+    fig, ax = plt.subplots(2, 8)
+
+  assert ax.shape == (2, 8), 'ax should be 2x8'
+
+  for i, key in enumerate(mvbvs):
+    mvbv = mvbvs[key]
+
+    for j in range(mvbv.n_view):
+      ax[i, j].imshow(mvbv.view_images[frame_index, j, ...])
+      ax[i, j].axis('off')
+      
+  return ax
+
+class MultiViewBmodeVideoPlayer:
+  def __init__(self, 
+               mvbvs:dict, 
+               plot_func = plot_single_frame_in_multiview_bmode_video):
+    
+    self.mvbvs = mvbvs
+    self.n_frame = mvbvs['lftx'].n_frame
+    self.plot_func = plot_func
+
+  def plot_frame(self, frame_index):
+    fig, ax = plt.subplots(2, 8)
+    self.plot_func(self.mvbvs, 
+                   frame_index = frame_index, 
+                   ax = ax)
+    plt.show()
+
+  def show_player(self):
+    frame_slider = IntSlider(min = 0, 
+                             max = self.n_frame-1, 
+                             step = 1, 
+                             value = 0, 
+                             description = 'Frame')
+    interactive_plot = interactive(self.plot_frame, 
+                                   frame_index=frame_slider)
+    display(interactive_plot)
+
+  def save_video(self, 
+                 tmp_dir = 'tmp', 
+                 video_path = 'video.mp4'):
+    # Create tmp dir
+    if os.path.exists(tmp_dir):
+      shutil.rmtree(tmp_dir)
+    os.makedirs('tmp', exist_ok=True)
+
+    # Save frames
+    print('Saving frames ...')
+    for i in tqdm(range(self.n_frame)):
+      self.plot_func(self.mvbvs,
+                     frame_index = i,
+                     ax = None)
+      
+      plt.savefig(f'{tmp_dir}/{i:03}.jpg')
+      plt.close()
+    
+    images = [img for img in glob.glob(f'{tmp_dir}/*jpg')]
+    images.sort()
+
+    # Save video
+    frame = cv2.imread(images[0])
+    height, width, layers = frame.shape
+
+    video = cv2.VideoWriter(video_path,
+                            cv2.VideoWriter_fourcc(*'mp4v'),
+                            15,
+                            (width,height))
+    print('Writing video ...')
+    for image in tqdm(images):
+      video.write(cv2.imread(image))
+
+    video.release()
+
+    return 
