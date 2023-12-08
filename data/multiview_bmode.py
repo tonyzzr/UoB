@@ -218,7 +218,7 @@ def plot_image_and_segmentation_masks(mvbsegs:dict,):
 
 
 
-
+# ------ #
 class MultiViewBmodeVideo(MultiViewBmode):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -230,6 +230,27 @@ class MultiViewBmodeVideo(MultiViewBmode):
     # initialize
     self.n_frame = None
     self.mat_source_dir = None
+
+  def zero_pad_2d(self, padding:tuple):
+    '''
+      padding: (padding_left, padding_right, padding_top, padding_bottom)
+    '''
+    padding_left, padding_right, padding_top, padding_bottom = padding
+
+    # 1 - update views and view masks (torch.nn.ZeroPad2d)
+    zero_pad = torch.nn.ZeroPad2d(padding)
+    self.view_images = zero_pad(self.view_images)
+    self.view_masks = zero_pad(self.view_masks)
+
+    # 2 - update image_shape and origin
+    _, _, h, w = self.view_images.size()
+    self.image_shape = (h, w)
+
+    x0, y0 = self.origin
+    self.origin = (x0 + padding_left, 
+                   y0 + padding_top)
+
+    return
 
 # ------ # 
 class Bmode2MultiViewBmodeVideo(Bmode2MultiViewBmode):
