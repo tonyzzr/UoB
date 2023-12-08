@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import cv2
 
+from tqdm import tqdm
+
 # --- RESIZE IMAGE --- #
 def resize_in_scale(src:np.ndarray(None), dst_size:tuple) -> np.ndarray(None):
     '''
@@ -100,7 +102,7 @@ def speckle_reduction(src, setting:SpeckleReductionSetting):
     _, _, ntrans, nfrm = src.shape
     dst = np.zeros(src.shape)
 
-    for i in range(nfrm):
+    for i in tqdm(range(nfrm)):
         for c in range(ntrans):
             img = np.array(src[..., c, i]).astype(np.uint8)
 
