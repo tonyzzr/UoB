@@ -6,7 +6,7 @@ import cv2
 import glob
 import shutil
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import torch
 import torchvision
@@ -137,14 +137,15 @@ def plot_image_and_transducer_positions(mvbs:dict,):
     plt.show()
 
 # ------ #
+@dataclass
 class MultiViewBmodeSeg(MultiViewBmode):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-    # initialize
-    self.n_class = None
-    self.seg_masks = None
-    self.seg_configs = None
+  # new attributes
+  n_class: int = field(default=0, init=False)
+  seg_masks: torch.Tensor = field(default=None, init=False)
+  seg_configs: torch.Tensor = field(defaut=None, init=False)
+  
+  def __post_init__(self, ):
+    pass
 
   # add a __str__ method here
 
@@ -219,17 +220,19 @@ def plot_image_and_segmentation_masks(mvbsegs:dict,):
 
 
 # ------ #
+@dataclass
 class MultiViewBmodeVideo(MultiViewBmode):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
+  # new attributes
+  n_frame: int = field(default=0, init=False)
+  mat_source_dir: str = field(default='', init=False)  
+  
+  def __post_init__(self, ):
     '''
       self.view_images will be in shape (n_frame, n_view, h, w)
       self.view_masks will be in shape (1, n_view, h, w)
     '''
+    pass
 
-    # initialize
-    self.n_frame = None
-    self.mat_source_dir = None
 
   def zero_pad_2d(self, padding:tuple):
     '''
