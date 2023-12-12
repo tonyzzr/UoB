@@ -142,7 +142,7 @@ class MultiViewBmodeSeg(MultiViewBmode):
   # new attributes
   n_class: int = field(default=0, init=False)
   seg_masks: torch.Tensor = field(default=None, init=False)
-  seg_configs: torch.Tensor = field(defaut=None, init=False)
+  seg_configs: torch.Tensor = field(default=None, init=False)
   
   def __post_init__(self, ):
     pass
