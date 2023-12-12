@@ -93,11 +93,16 @@ class TissueStructureCosegmentation:
     sorted_class_nos = self._sort_class_no_by_mask_centroid()
     new_masks = [np.full_like(mask, np.nan) for mask in self.part_imgs]
 
-    for i, mask in enumerate(new_masks):
+    for i, new_mask in enumerate(new_masks):
       for j in range(len(sorted_class_nos)):
+        original_label = sorted_class_nos[j]
         new_label = j
-        sorted_label = sorted_class_nos[j]
-        mask[self.part_imgs[i] == sorted_label] = new_label
+
+        print(f'original_label = {original_label}, new_label{new_label}')
+        
+        new_mask[self.part_imgs[i] == original_label] = new_label
+
+    
 
     return new_masks
 
