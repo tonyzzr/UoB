@@ -82,14 +82,22 @@ class TissueStructureCosegmentation:
     return sorted_class_nos
 
   def _fill_segmentation_masks_with_sorted_class_no(self, ):
+    '''
+      sorted_class_nos = [c0', c1', c2', ...] where r0'<=r1'<=r2', ...
+      r0' means the smallest r_centroid --- c0' is the value of segmentation mask on the top --- so, new_mask[original_mask == c0'] <- 0
+
+      in general:
+        new_mask[original_mask == c_j'] <- j
+    '''
+    
     sorted_class_nos = self._sort_class_no_by_mask_centroid()
     new_masks = [np.full_like(mask, np.nan) for mask in self.part_imgs]
 
     for i, mask in enumerate(new_masks):
       for j in range(len(sorted_class_nos)):
-        original_label = j
+        new_label = j
         sorted_label = sorted_class_nos[j]
-        mask[self.part_imgs[i] == original_label] = sorted_label
+        mask[self.part_imgs[i] == sorted_label] = new_label
 
     return new_masks
 
