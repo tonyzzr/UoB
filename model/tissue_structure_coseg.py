@@ -96,7 +96,7 @@ class TissueStructureCosegmentation:
     for j in range(len(sorted_class_nos)):
       original_label = sorted_class_nos[j]
       new_label = j
-      print(f'original_label = {original_label}, new_label{new_label}')
+      print(f'original_label = {original_label}, new_label = {new_label}')
       
       for i, new_mask in enumerate(new_masks): 
         new_mask[self.part_imgs[i] == original_label] = new_label
