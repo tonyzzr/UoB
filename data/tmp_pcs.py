@@ -63,10 +63,13 @@ def seg2pcs(seg:np.ndarray, N = 16) -> list[PointCloud]:
   for c in fg_classes:
     mask = seg == c
     mask = mask.astype(np.uint8)
-    
-    measure = geo.as_measure(mask, N)
-    pc = geo.migrate(measure, N, n_epoch=2).cpu().numpy()
-    pcs.append(PointCloud(coord = pc))
+
+    if np.count_nonzero(mask) < N**2:
+      pcs.append(PointCloud(coord = np.array([]))
+    else:
+      measure = geo.as_measure(mask, N)
+      pc = geo.migrate(measure, N, n_epoch=2).cpu().numpy()
+      pcs.append(PointCloud(coord = pc))
 
   return pcs
 
@@ -78,10 +81,13 @@ def img_seg2pcs(img:np.ndarray, seg:np.ndarray, N = 16) -> PointCloud:
   for c in fg_classes:
     mask = seg == c # add a gaussian conv here?
     masked_img = mask.astype(np.uint8) * img[..., 0]
-    
-    measure = geo.as_measure(masked_img, N)
-    pc = geo.migrate(measure, N, n_epoch=2).cpu().numpy()
-    pcs.append(PointCloud(coord = pc))
+
+    if np.count_nonzero(mask) < N**2:
+      pcs.append(PointCloud(coord = np.array([]))
+    else:
+      measure = geo.as_measure(masked_img, N)
+      pc = geo.migrate(measure, N, n_epoch=2).cpu().numpy()
+      pcs.append(PointCloud(coord = pc))
 
   return pcs
 
