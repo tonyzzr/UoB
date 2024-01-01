@@ -106,9 +106,12 @@ def tensorize_trans_pos(trans_pos, img_shape ):
 
 def forward_kinematics(trans_pos_tensor, 
                        thetas, ):
+  assert trans_pos_tensor.device == thetas.device
+  device = thetas.device
   
   num_arr = trans_pos_tensor.size()[0]
   rot_angles = torch.cumsum(thetas, dim=0).unsqueeze(1).unsqueeze(2)
+                         
   # print(rot_angles.size())
   x_l = trans_pos_tensor[:, 0, ...]
   x_r = trans_pos_tensor[:, 1, ...]
@@ -118,19 +121,19 @@ def forward_kinematics(trans_pos_tensor,
                                   [0, 0, 0],
                                   [0, 0, 1],
                                   ])
-                        ).unsqueeze(0).repeat(num_arr, 1, 1)
+                        ).unsqueeze(0).repeat(num_arr, 1, 1).to(device)
 
   G1 = torch.from_numpy(np.array([[1, 0, 0],
                                   [0, 1, 0],
                                   [0, 0, 0],
                                   ])
-                        ).unsqueeze(0).repeat(num_arr, 1, 1)
+                        ).unsqueeze(0).repeat(num_arr, 1, 1).to(device)
 
   G2 = torch.from_numpy(np.array([[0, -1, 0],
                                   [1, 0, 0],
                                   [0, 0, 0],
                                   ])
-                        ).unsqueeze(0).repeat(num_arr, 1, 1)
+                        ).unsqueeze(0).repeat(num_arr, 1, 1).to(device)
   
   # print(G1.size())
   R = G1 * torch.cos(rot_angles) + G2 * torch.sin(rot_angles)
