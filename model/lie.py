@@ -106,7 +106,7 @@ def tensorize_trans_pos(trans_pos, img_shape ):
 
 def forward_kinematics(trans_pos_tensor, 
                        thetas, ):
-  assert trans_pos_tensor.device == thetas.device
+  # assert trans_pos_tensor.device == thetas.device
   device = thetas.device
   
   num_arr = trans_pos_tensor.size()[0]
