@@ -110,12 +110,13 @@ def forward_kinematics(trans_pos_tensor,
   device = thetas.device
   
   num_arr = trans_pos_tensor.size()[0]
-  rot_angles = torch.cumsum(thetas, dim=0).unsqueeze(1).unsqueeze(2)
+  rot_angles = torch.cumsum(thetas, dim=0).unsqueeze(1).unsqueeze(2).to(device)
                          
   # print(rot_angles.size())
   x_l = trans_pos_tensor[:, 0, ...]
   x_r = trans_pos_tensor[:, 1, ...]
   # print(x_l.size())
+  x_l, x_r = x_l.to(device), x_r.to(device)
 
   G0 = torch.from_numpy(np.array([[0, 0, 0],
                                   [0, 0, 0],
