@@ -1,6 +1,6 @@
 import torch
 
-def mean_image_fusion(registered_imgs):
+def mean_image_fusion(registered_imgs, **kwargs):
   assert len(registered_imgs.shape) == 3, "registered_imgs dimension should be (N, H, W)"
   
   n_view = registered_imgs.shape[0]
