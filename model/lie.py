@@ -148,7 +148,7 @@ def forward_kinematics(trans_pos_tensor,
       torch.einsum('bij,bjk->bik', R_cum1, x_l)
   
   # print(t)
-  t_cat = torch.cat((torch.zeros(num_arr, 3, 2), t), dim=2)
+  t_cat = torch.cat((torch.zeros(num_arr, 3, 2).to(device), t), dim=2)
   T = R + t_cat + G0
 
   # print(T)
