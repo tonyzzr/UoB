@@ -17,8 +17,9 @@ def mean_image_fusion(registered_imgs):
 def max_fuser(registered_imgs, **kwargs):
   assert type(registered_imgs) == torch.Tensor
   assert registered_imgs.ndim == 3
-  
-  return torch.max(registered_imgs, dim=0)
+
+  fused_img, _ = torch.max(registered_imgs, dim=0)
+  return fused_img
 
 def weighted_mean_fuser(registered_imgs, registered_masks, eps=0.5, **kwargs):
   assert type(registered_imgs) == torch.Tensor
