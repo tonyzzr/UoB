@@ -2,9 +2,16 @@ import torch
 from torch import nn
 import numpy as np
 import pypose as pp
-import matplotlib.pyplot as plt
+from tqdm import tqdm
 
+import matplotlib.pyplot as plt
 from geomloss import SamplesLoss
+
+from ..data.tmp_seg_data import SegData
+from ..data.tmp_pcs import create_point_clouds_dataframe, plot_point_clouds_dataframe
+from .rela_pose_est import estimate_relative_pose
+
+# ------ #
 
 class RegNet(nn.Module):
 
@@ -144,3 +151,110 @@ def plot_point_cloud_reg_log(log, pc0, r=5, c=5):
 
       ax[i, j].annotate(f'{idx}', xytext=(-0.1, 0.05), xy=(0, 0))
   plt.show()
+
+
+# ------ #
+
+
+class RelativePoseEstimation:
+  def __init__(self, mvbsegs, config):
+    self.mvbsegs = mvbsegs
+    self.config = config
+
+    N = self.config['N']
+
+    self.seg_data = self._multi_view_bmode_seg_to_seg_data()
+    self.pcs_df = create_point_clouds_dataframe(self.seg_data, N=N)
+
+  def _get_rela_trans_pos(self, ):
+    mvbseg = self.mvbsegs['lftx']
+
+    h, w = mvbseg.view_images[0].shape
+    x0, y0 = mvbseg.origin
+    x1, y1 = x0 + mvbseg.aperture_size, y0
+
+    trans_pos = torch.tensor(
+        [[x0/w, y0/h],
+         [x1/w, y1/h],]
+    )
+
+    return trans_pos
+
+  def _multi_view_bmode_seg_to_seg_data(self, ):
+    mvbsegs = self.mvbsegs
+
+    mat_directory = mvbsegs['lftx'].mat_source_file
+    frame_index = None
+
+    lf_imgs = [
+        mvbsegs['lftx'].view_images.unsqueeze(-1)[i, ...].numpy() for i in range(mvbsegs['lftx'].n_view)
+    ]
+    lf_segs = [
+        mvbsegs['lftx'].seg_masks[i, ...].numpy() for i in range(mvbsegs['lftx'].n_view)
+    ]
+
+    hf_imgs = [
+        mvbsegs['hftx'].view_images.unsqueeze(-1)[i, ...].numpy() for i in range(mvbsegs['hftx'].n_view)
+    ]
+    hf_segs = [
+        mvbsegs['hftx'].seg_masks[i, ...].numpy() for i in range(mvbsegs['hftx'].n_view)
+    ]
+
+    lf_pad = None
+    hf_pad = None
+
+
+    return SegData(
+        mat_directory=mat_directory,
+        frame_index=frame_index,
+        lf_imgs=lf_imgs,
+        lf_segs=lf_segs,
+        hf_imgs=hf_imgs,
+        hf_segs=hf_segs,
+        lf_pad=lf_pad,
+        hf_pad=hf_pad
+    )
+
+  def _plot_point_clouds_dataframe(self, ):
+    plot_point_clouds_dataframe(self.pcs_df, alpha=0.005)
+    return
+
+  def run_single_pose_estimation(self, view_index=0, pc_tag='img_seg_pc2'):
+    assert view_index < self.pcs_df.shape[0] - 1
+    assert pc_tag in self.pcs_df.columns
+
+    pcs_df = self.pcs_df
+
+    pc0 = pcs_df.iloc[view_index][pc_tag].to_tensor(three_d=True, homogeneous=True).T
+    pc1 = pcs_df.iloc[view_index+1][pc_tag].to_tensor(three_d=True, homogeneous=True).T
+    data = {
+        'pc0': pc0,
+        'pc1': pc1,
+        'rela_trans_pos': self._get_rela_trans_pos(),
+        'rela_trans_pos_gap': self._get_rela_trans_pos(),
+        'consider_gap': False,
+    }
+
+    log = estimate_relative_pose(data, self.config)
+
+    theta_star = log['theta'][-1]
+
+    return theta_star
+
+  def run_all_pose_estimation(self, pc_tag='img_seg_pc2',):
+    n_view = self.mvbsegs['lftx'].n_view
+    thetas = np.zeros((n_view, ))
+
+    for view_index in tqdm(range(0, n_view-1)):
+      thetas[view_index+1] = self.run_single_pose_estimation(view_index, pc_tag)
+
+    notes = {
+        'pc_tag': pc_tag,
+        'mat_source_file': self.mvbsegs['lftx'].mat_source_file,
+        'pose_est_config': self.config,
+    }
+
+    return RelativePoses(
+        thetas = torch.tensor(thetas),
+        notes = notes,
+      )
