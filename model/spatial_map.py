@@ -11,9 +11,9 @@ from .rigid_link import RigidLink
 from .apply_pose import cv2apply_poses
 from .image_fusion import weighted_mean_fuser, max_fuser, mean_fuser
 
-
-def spatial_mapping(mvbs, pose_in_degree, fuser = max_fuser):
+def spatial_mapping(mvbs, pose_in_degree, fuser = max_fuser, return_rl = False):
   tissue_maps = {}
+  rigid_links = {}
   for key in ['lftx', 'hftx']:
     mvb = mvbs[key]
     n_view, aperture_size, origin = mvb.n_view, mvb.aperture_size, mvb.origin
@@ -34,8 +34,12 @@ def spatial_mapping(mvbs, pose_in_degree, fuser = max_fuser):
                   registered_masks = registered_masks,)
     fused_img = fuser(**params)
     tissue_maps[key] = fused_img
+    rigid_links[key] = rl
 
-  return tissue_maps
+  if return_rl:
+    return tissue_maps, rigid_links
+  else:
+    return tissue_maps
   
 def reneder_tissue_maps(tissue_maps, ax=None):
   if ax is None:
