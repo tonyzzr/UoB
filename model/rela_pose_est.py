@@ -9,7 +9,6 @@ from geomloss import SamplesLoss
 
 from ..data.tmp_seg_data import SegData
 from ..data.tmp_pcs import create_point_clouds_dataframe, plot_point_clouds_dataframe
-from .rela_pose_est import estimate_relative_pose
 
 # ------ #
 
