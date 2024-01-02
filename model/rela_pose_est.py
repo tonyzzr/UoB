@@ -16,8 +16,7 @@ class RegNet(nn.Module):
 
     def __init__(self, angle=0,):
         super().__init__()
-
-        self.theta = torch.nn.Parameter(data = torch.tensor(angle/180*np.pi).to(device),
+        self.theta = torch.nn.Parameter(data = torch.tensor(angle/180*np.pi),
                                         requires_grad=True)
 
     def forward(self, pc1, trans_pos):
