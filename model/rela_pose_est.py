@@ -7,6 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from geomloss import SamplesLoss
 
+from ..data.poses import RelativePoses
 from ..data.tmp_seg_data import SegData
 from ..data.tmp_pcs import create_point_clouds_dataframe, plot_point_clouds_dataframe
 
