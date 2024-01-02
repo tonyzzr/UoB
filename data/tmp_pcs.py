@@ -135,6 +135,8 @@ def plot_point_clouds_dataframe(pcs_df: pd.DataFrame, alpha=0.05):
   for i in range(pcs_df.shape[0]):
     for j, c in enumerate(cols):
       pc = pcs_df.loc[i, c]
+      if torch.numel(torch.tensor(pc.coord)) == 0:
+        continue
 
       if j in range(1, 4):
         axis = ax[1, i]
