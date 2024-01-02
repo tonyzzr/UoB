@@ -57,7 +57,7 @@ class RegNet(nn.Module):
 
         # R(theta)
         rot_pose = pp.so3(theta_vec).Exp()
-        rot_se3_vec = torch.cat([torch.tensor([0, 0, 0,].to(device)), rot_pose.tensor()])
+        rot_se3_vec = torch.cat([torch.tensor([0, 0, 0,]).to(device), rot_pose.tensor()])
         poses.append(pp.SE3(rot_se3_vec)) 
 
         # T(x, y)
