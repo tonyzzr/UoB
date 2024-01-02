@@ -17,7 +17,7 @@ class RegNet(nn.Module):
     def __init__(self, angle=0,):
         super().__init__()
 
-        self.theta = torch.nn.Parameter(data = torch.tensor(angle/180*np.pi),
+        self.theta = torch.nn.Parameter(data = torch.tensor(angle/180*np.pi).to(device),
                                         requires_grad=True)
 
     def forward(self, pc1, trans_pos):
@@ -63,7 +63,7 @@ class RegNet(nn.Module):
         # T(x, y)
         poses.append(pp.SE3([trans_pos[1, 0], trans_pos[1, 1], 0, 0, 0, 0, 1]).to(device)) # T(x, y)
 
-        # 3. finally multiply all matrix together
+        # 3. finally multiply all matrices together
         # firstly is the translation matrix
         # secondly is the rotation matrices - 1. T(-x, -y); 2. R; 3. T(x, y)
         pose_mat = pp.identity_SE3().matrix().to(device)
