@@ -29,8 +29,10 @@ class RegNet(nn.Module):
         return w_dist(pc0, pc1)
 
     def theta2pos_mat(self, theta:torch.Tensor, trans_pos:torch.Tensor) -> torch.Tensor:
+        device = theta.device
+        trans_pos = trans_pos.to(device)
 
-        theta_vec = torch.tensor([0., 0., 1.]) * theta
+        theta_vec = torch.tensor([0., 0., 1.]).to(device) * theta
 
         # the initial pose is composed by two parts
         # 1. translational movement (to align the right edge of array 0, and left edge of array 1)
@@ -43,7 +45,7 @@ class RegNet(nn.Module):
 
         dist = trans_pos[1, 0] - trans_pos[0, 0]
         # print(dist)
-        poses.append(pp.SE3([dist, 0, 0, 0, 0, 0, 1]))
+        poses.append(pp.SE3([dist, 0, 0, 0, 0, 0, 1]).to(device))
 
 
         # 2. rotation
@@ -51,20 +53,20 @@ class RegNet(nn.Module):
 
         # decompose to T(x,y)*R(theta)*T(-x, -y) (P), from right to left:
         # T(-x, -y)
-        poses.append(pp.SE3([-trans_pos[1, 0], -trans_pos[1, 1], 0, 0, 0, 0, 1])) 
+        poses.append(pp.SE3([-trans_pos[1, 0], -trans_pos[1, 1], 0, 0, 0, 0, 1]).to(device)) 
 
         # R(theta)
         rot_pose = pp.so3(theta_vec).Exp()
-        rot_se3_vec = torch.cat([torch.tensor([0, 0, 0,]), rot_pose.tensor()])
+        rot_se3_vec = torch.cat([torch.tensor([0, 0, 0,].to(device)), rot_pose.tensor()])
         poses.append(pp.SE3(rot_se3_vec)) 
 
         # T(x, y)
-        poses.append(pp.SE3([trans_pos[1, 0], trans_pos[1, 1], 0, 0, 0, 0, 1])) # T(x, y)
+        poses.append(pp.SE3([trans_pos[1, 0], trans_pos[1, 1], 0, 0, 0, 0, 1]).to(device)) # T(x, y)
 
         # 3. finally multiply all matrix together
         # firstly is the translation matrix
         # secondly is the rotation matrices - 1. T(-x, -y); 2. R; 3. T(x, y)
-        pose_mat = pp.identity_SE3().matrix()
+        pose_mat = pp.identity_SE3().matrix().to(device)
         for pose in poses:
           pose_mat = pose.matrix() @ pose_mat
           # print(pose_mat)
