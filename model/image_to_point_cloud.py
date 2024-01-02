@@ -17,7 +17,7 @@ from sklearn.neighbors import KernelDensity
 
 from geomloss import SamplesLoss
 
-from .data import geo
+from ..data import geo
 
 '''
   Point cloud helper functions.
