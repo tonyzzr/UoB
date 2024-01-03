@@ -48,7 +48,7 @@ def red_green_fuser(registered_imgs, **kwargs):
   green_channel_imgs = registered_imgs[green_channel_ind, ...]
                          
   red_channel_fused = mean_fuser(red_channel_imgs)
-  green_channel_fused = mean_fuser(red_channel_imgs)
+  green_channel_fused = mean_fuser(green_channel_imgs)
 
   red_channel_fused /= torch.max(red_channel_fused)
   green_channel_fused /= torch.max(green_channel_fused)
