@@ -42,10 +42,10 @@ def red_green_fuser(registered_imgs, **kwargs):
   n_view, h, w = registered_imgs.size()
 
   red_channel_ind = list(range(0, n_view, 2))
-  red_channel_imgs = registed_imgs[red_channel_ind, ...]
+  red_channel_imgs = registered_imgs[red_channel_ind, ...]
 
   green_channel_ind = list(range(1, n_view, 2))
-  green_channel_imgs = registed_imgs[green_channel_ind, ...]
+  green_channel_imgs = registered_imgs[green_channel_ind, ...]
                          
   red_channel_fused = mean_fuser(red_channel_imgs)
   green_channel_fused = mean_fuser(red_channel_imgs)
