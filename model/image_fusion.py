@@ -50,7 +50,7 @@ def red_green_fuser(registered_imgs, **kwargs):
   red_channel_fused = mean_fuser(red_channel_imgs)
   green_channel_fused = mean_fuser(red_channel_imgs)
 
-  fused_img = torch.zero_like(h, w, 3)
+  fused_img = torch.zeros(h, w, 3)
   fused_img[..., 0] = red_channel_fused
   fused_img[..., 1] = green_channel_fused
 
