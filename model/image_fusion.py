@@ -34,3 +34,24 @@ def mean_fuser(registered_imgs, **kwargs):
   assert registered_imgs.ndim == 3
 
   return torch.mean(registered_imgs, dim=0)
+
+def red_green_fuser(registered_imgs, **kwargs):
+  assert type(registered_imgs) == torch.Tensor
+  assert registered_imgs.ndim == 3
+
+  n_view, h, w = registered_imgs.size()
+
+  red_channel_ind = list(range(0, n_view, 2))
+  red_channel_imgs = registed_imgs[red_channel_ind, ...]
+
+  green_channel_ind = list(range(1, n_view, 2))
+  green_channel_imgs = registed_imgs[green_channel_ind, ...]
+                         
+  red_channel_fused = mean_fuser(red_channel_imgs)
+  green_channel_fused = mean_fuser(red_channel_imgs)
+
+  fused_img = torch.zero_like(h, w, 3)
+  fused_img[..., 0] = red_channel_fused
+  fused_img[..., 1] = green_channel_fused
+
+  return fused_img
