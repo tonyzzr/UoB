@@ -8,7 +8,7 @@ from ..data.poses import RelativePoses
 from ..data.multiview_bmode import MultiViewBmode, plot_image_and_transducer_positions
 
 
-import .lie as lie
+import lie
 from .rigid_link import RigidLink
 from .apply_pose import cv2apply_poses
 from .image_fusion import weighted_mean_fuser, max_fuser, mean_fuser
