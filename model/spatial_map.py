@@ -1,7 +1,9 @@
 import pickle
 import numpy as np
-import torch
 import matplotlib.pyplot as plt
+
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from ..data.poses import RelativePoses
