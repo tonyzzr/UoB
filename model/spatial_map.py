@@ -8,7 +8,7 @@ from ..data.poses import RelativePoses
 from ..data.multiview_bmode import MultiViewBmode, plot_image_and_transducer_positions
 
 
-import lie
+from .lie import forward_kinematics
 from .rigid_link import RigidLink
 from .apply_pose import cv2apply_poses
 from .image_fusion import weighted_mean_fuser, max_fuser, mean_fuser
@@ -144,7 +144,7 @@ class SpatialMapNet(nn.Module):
 
   def _calc_stn_theta_matrices(self, normalized_transducer_position):
 
-    transformation_matrices = lie.forward_kinematics(normalized_transducer_position,
+    transformation_matrices = forward_kinematics(normalized_transducer_position,
                                                       self.rela_poses_in_radian)
     inversed_matrices = torch.linalg.inv(transformation_matrices)
     stn_theta_matrices = inversed_matrices.squeeze()[:, :2, :]
