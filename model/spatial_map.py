@@ -134,7 +134,10 @@ class SpatialMapNet(nn.Module):
     super().__init__()
     self.init_poses_in_radian = init_poses_in_radian
     self.rela_poses_in_radian = nn.Parameter(data = self.init_poses_in_radian,
-                                                   requires_grad = True)
+                                                   requires_grad = True) 
+    # use self.delta_rela_poses_in_radian here instead 
+    # -- so that we can apply regularizations to the init_poses_in_radian
+
     self.rela_poses_in_radian.register_hook(self._mask_grad)
 
     self.fuser = fuser
