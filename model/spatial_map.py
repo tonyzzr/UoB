@@ -133,13 +133,12 @@ class SpatialMapNet(nn.Module):
   def __init__(self, init_poses_in_radian, fuser):
     super().__init__()
     self.init_poses_in_radian = init_poses_in_radian
-    self.rela_poses_in_radian = nn.Parameter(data = self.init_poses_in_radian,
-                                                   requires_grad = True) 
-    # use self.delta_rela_poses_in_radian here instead 
-    # -- so that we can apply regularizations to the init_poses_in_radian
+    self.delta_rela_poses_in_radian = nn.Parameter(data = torch.zeros_like(self.init_poses_in_radian),
+                                                   requires_grad = True)
 
-    self.rela_poses_in_radian.register_hook(self._mask_grad)
+    self.delta_rela_poses_in_radian.register_hook(self._mask_grad)
 
+    self.rela_poses_in_radian = None # placeholder
     self.fuser = fuser
 
   def _mask_grad(self, grad):
@@ -180,13 +179,15 @@ class SpatialMapNet(nn.Module):
 
 
   def forward(self, image_tensor, mask_tensor, normalized_transducer_position):
+    device = image_tensor.device
+    self.init_poses_in_radian = self.init_poses_in_radian.to(device)
+    self.rela_poses_in_radian = self.init_poses_in_radian + self.delta_rela_poses_in_radian
 
     stn_theta_matrices = self._calc_stn_theta_matrices(normalized_transducer_position)
     grids = F.affine_grid(stn_theta_matrices, image_tensor.size())
     tissue_map = self._calc_tissue_map(image_tensor, mask_tensor, grids)
 
     return tissue_map
-
 
 #@title PixelDomainOptimization
 from IPython.display import display, clear_output
