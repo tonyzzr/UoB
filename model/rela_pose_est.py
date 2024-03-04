@@ -220,7 +220,10 @@ class RelativePoseEstimation:
     plot_point_clouds_dataframe(self.pcs_df, alpha=0.005)
     return
 
-  def run_single_pose_estimation(self, view_index=0, pc_tag='img_seg_pc2'):
+  def run_single_pose_estimation(self, 
+                                 view_index=0, 
+                                 pc_tag='img_seg_pc2',
+                                 return_log = False,):
     assert view_index < self.pcs_df.shape[0] - 1
     assert pc_tag in self.pcs_df.columns
 
@@ -237,6 +240,9 @@ class RelativePoseEstimation:
     }
 
     log = estimate_relative_pose(data, self.config)
+
+    if return_log:
+        return log
 
     theta_star = log['theta'][-1]
 
