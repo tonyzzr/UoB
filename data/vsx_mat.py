@@ -120,6 +120,81 @@ class MatDataLoader:
         
         return Trans
 
+
+'''
+    Load mat_data from a given directory.
+'''
+import glob
+import os
+
+class DirMatDataLoader:
+    def __init__(self, matfile_dir) -> None:
+
+        self.matfile_dir = matfile_dir
+        self.file_index = self.get_file_index(self.matfile_dir)
+
+    def load_matfile(self, ind):
+
+        matfile_paths = {
+            'lftx': fr'{self.matfile_dir}\{ind}_LF.mat',
+            'hftx': fr'{self.matfile_dir}\{ind}_HF.mat',
+        }
+
+        mat_data = {}
+
+        for key in matfile_paths:
+            mat_data[key] = MatDataLoader(matfile_paths[key]).build_mat_data()
+            
+        return mat_data
+
+    def load_all_matfiles(self, ):
+
+        mat_data = {}
+        for ind in range(1, self.file_index+1):
+            single_file_mat_data = self.load_matfile(ind)
+
+            if ind == 1:
+                mat_data = single_file_mat_data
+
+            else:
+                for key in single_file_mat_data:
+                    mat_data[key].imgdata = self.concatenate_imgdata(prev = mat_data[key].imgdata,
+                                                                     new =single_file_mat_data[key].imgdata)
+
+        return mat_data
+
+    @staticmethod
+    def concatenate_imgdata(prev, new):
+
+        concatenated = {}
+        for view_ind in prev.keys():
+            concatenated[view_ind] = np.concatenate(
+                (prev[view_ind], new[view_ind]),
+                axis = 0,
+            )
+         
+        return concatenated
+
+    @staticmethod
+    def get_file_index(matfile_dir):
+        '''
+            1. get all .mat filenames
+            2. check number of files -- should be an even number -- and divide it by 2 (assumptions here, update if necessary)
+        '''
+
+        pattern = os.path.join(matfile_dir, '*.mat')
+        mat_files = glob.glob(pattern)
+
+        if len(mat_files) % 2 == 0:
+            return len(mat_files) // 2
+        else:
+            print(mat_files)
+            raise ValueError("number of matfiles is not even")
+
+
+
+
+
 def main():
     return
 
