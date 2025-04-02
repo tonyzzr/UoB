@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
+import os
 import sys
-sys.path.append('/Users/zhuoruizhang/Desktop/')
+# Add the project root to Python path
+project_root = Path(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(str(project_root))
+sys.path.append(str(project_root.parent))
 
 def load_and_visualize_frame(mvbv_path: str, frame_idx: int = 0):
     """
