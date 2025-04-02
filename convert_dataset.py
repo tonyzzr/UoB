@@ -5,7 +5,7 @@ from pathlib import Path
 # Add the project root to Python path
 project_root = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(project_root))
-sys.path.append('/Users/zhuoruizhang/Desktop/')
+sys.path.append(str(project_root.parent))
 
 from mat_to_mvbv_converter import convert_mat_directory
 
