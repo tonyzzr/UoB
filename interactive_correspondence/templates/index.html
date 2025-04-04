@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Correspondence Viewer</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.1.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .plot-container {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .plot {
+            width: 100%;
+            height: 300px;
+        }
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Interactive Correspondence Viewer</h1>
+        <div class="controls">
+            <button class="button" onclick="resetView()">Reset View</button>
+            <button class="button" onclick="toggleOverlay()">Toggle Overlay</button>
+        </div>
+        <div class="loading" id="loading">Loading...</div>
+        <div class="grid-container">
+            <div class="plot-container">
+                <div id="source-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">Source View</div>
+            </div>
+            <div class="plot-container">
+                <div id="view1-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 1</div>
+            </div>
+            <div class="plot-container">
+                <div id="view2-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 2</div>
+            </div>
+            <div class="plot-container">
+                <div id="view3-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 3</div>
+            </div>
+            <div class="plot-container">
+                <div id="view4-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 4</div>
+            </div>
+            <div class="plot-container">
+                <div id="view5-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 5</div>
+            </div>
+            <div class="plot-container">
+                <div id="view6-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 6</div>
+            </div>
+            <div class="plot-container">
+                <div id="view7-plot" class="plot"></div>
+                <div style="text-align: center; margin-top: 5px;">View 7</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let showOverlay = true;
+        let debounceTimer;
+        let plots = {};
+        let sourceImage = null;
+        let currentPoint = null;
+
+        // Initialize all plots
+        async function initializePlots() {
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                // Load source image
+                const sourceResponse = await fetch('/get_image/0');
+                const sourceData = await sourceResponse.json();
+                sourceImage = new Image();
+                sourceImage.src = 'data:image/png;base64,' + sourceData.image;
+                
+                // Wait for image to load
+                await new Promise((resolve) => {
+                    sourceImage.onload = resolve;
+                });
+                
+                // Create source plot
+                const sourcePlot = {
+                    data: [{
+                        type: 'image',
+                        source: sourceImage.src,
+                        hoverinfo: 'x+y',
+                        hoverongaps: false
+                    }],
+                    layout: {
+                        margin: { l: 0, r: 0, t: 0, b: 0 },
+                        xaxis: { 
+                            showgrid: false, 
+                            zeroline: false, 
+                            showticklabels: false,
+                            fixedrange: true
+                        },
+                        yaxis: { 
+                            showgrid: false, 
+                            zeroline: false, 
+                            showticklabels: false,
+                            fixedrange: true,
+                            scaleanchor: 'x',
+                            autorange: 'reversed'
+                        },
+                        showlegend: false,
+                        hovermode: 'closest',
+                        dragmode: false
+                    },
+                    config: { 
+                        displayModeBar: false,
+                        responsive: true
+                    }
+                };
+                
+                const sourcePlotDiv = document.getElementById('source-plot');
+                Plotly.newPlot(sourcePlotDiv, sourcePlot.data, sourcePlot.layout, sourcePlot.config)
+                    .then(() => {
+                        // Add hover event listener
+                        sourcePlotDiv.on('plotly_hover', (data) => {
+                            clearTimeout(debounceTimer);
+                            debounceTimer = setTimeout(() => {
+                                if (data && data.points && data.points[0]) {
+                                    const point = data.points[0];
+                                    const poiH = Math.floor(point.y);
+                                    const poiW = Math.floor(point.x);
+                                    console.log('Hover coordinates:', poiH, poiW);
+                                    updateCorrespondence(poiH, poiW);
+                                }
+                            }, 50);
+                        });
+                    });
+                
+                // Load and create other views
+                for (let i = 1; i < 8; i++) {
+                    const response = await fetch(`/get_image/${i}`);
+                    const data = await response.json();
+                    const img = new Image();
+                    img.src = 'data:image/png;base64,' + data.image;
+                    
+                    await new Promise((resolve) => {
+                        img.onload = resolve;
+                    });
+                    
+                    const plot = {
+                        data: [{
+                            type: 'image',
+                            source: img.src,
+                            hoverinfo: 'skip'
+                        }],
+                        layout: {
+                            margin: { l: 0, r: 0, t: 0, b: 0 },
+                            xaxis: { 
+                                showgrid: false, 
+                                zeroline: false, 
+                                showticklabels: false,
+                                fixedrange: true
+                            },
+                            yaxis: { 
+                                showgrid: false, 
+                                zeroline: false, 
+                                showticklabels: false,
+                                fixedrange: true,
+                                scaleanchor: 'x',
+                                autorange: 'reversed'
+                            },
+                            showlegend: false,
+                            dragmode: false
+                        },
+                        config: { 
+                            displayModeBar: false,
+                            responsive: true
+                        }
+                    };
+                    
+                    await Plotly.newPlot(`view${i}-plot`, plot.data, plot.layout, plot.config);
+                }
+            } catch (error) {
+                console.error('Error initializing plots:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Update correspondence maps
+        async function updateCorrespondence(poiH, poiW) {
+            if (isNaN(poiH) || isNaN(poiW)) {
+                console.error('Invalid coordinates:', poiH, poiW);
+                return;
+            }
+
+            currentPoint = { h: poiH, w: poiW };
+
+            // Add visual marker on source plot
+            const sourceDiv = document.getElementById('source-plot');
+            const sourceUpdate = {
+                data: [{
+                    type: 'image',
+                    source: sourceImage.src,
+                    hoverinfo: 'x+y'
+                }, {
+                    type: 'scatter',
+                    x: [poiW],
+                    y: [poiH],
+                    mode: 'markers',
+                    marker: {
+                        color: 'red',
+                        size: 10
+                    },
+                    hoverinfo: 'skip'
+                }]
+            };
+            await Plotly.react(sourceDiv, sourceUpdate.data, sourceDiv.layout);
+
+            // Update all views in parallel
+            const updatePromises = [];
+            for (let viewIdx = 1; viewIdx < 8; viewIdx++) {
+                updatePromises.push(updateView(viewIdx, poiH, poiW));
+            }
+            await Promise.all(updatePromises);
+        }
+
+        async function updateView(viewIdx, poiH, poiW) {
+            try {
+                const response = await fetch(`/get_correspondence/${viewIdx}/${poiH}/${poiW}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                
+                const corrMap = data.correspondence;
+                const plot = document.getElementById(`view${viewIdx}-plot`);
+                
+                const update = {
+                    data: [{
+                        type: 'image',
+                        source: plot.data[0].source,
+                        hoverinfo: 'skip'
+                    }]
+                };
+                
+                if (showOverlay) {
+                    update.data.push({
+                        type: 'heatmap',
+                        z: corrMap,
+                        colorscale: [
+                            [0, 'rgba(0,0,0,0)'],
+                            [0.1, 'rgba(255,0,0,0.1)'],
+                            [0.5, 'rgba(255,0,0,0.5)'],
+                            [1, 'rgba(255,0,0,0.8)']
+                        ],
+                        showscale: false,
+                        hoverinfo: 'skip',
+                        xaxis: 'x',
+                        yaxis: 'y'
+                    });
+                }
+                
+                const layout = {
+                    ...plot.layout,
+                    xaxis: {
+                        ...plot.layout.xaxis,
+                        range: [0, data.shape.w]
+                    },
+                    yaxis: {
+                        ...plot.layout.yaxis,
+                        range: [data.shape.h, 0]
+                    }
+                };
+                
+                await Plotly.react(plot, update.data, layout);
+            } catch (error) {
+                console.error(`Error updating view ${viewIdx}:`, error);
+            }
+        }
+
+        // Reset view
+        function resetView() {
+            currentPoint = null;
+            initializePlots();
+        }
+
+        // Toggle overlay
+        function toggleOverlay() {
+            showOverlay = !showOverlay;
+            if (currentPoint) {
+                updateCorrespondence(currentPoint.h, currentPoint.w);
+            }
+        }
+
+        // Initialize when page loads
+        window.onload = initializePlots;
+    </script>
+</body>
+</html> 
