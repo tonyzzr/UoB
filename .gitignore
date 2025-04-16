@@ -1,5 +1,6 @@
 ./data/
 *.mat
+*.pkl
 
 ./correspondence_cache/
 *.npy
