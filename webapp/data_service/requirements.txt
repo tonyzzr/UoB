@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+# Add other dependencies needed by your UoB library for data loading
+# e.g., numpy, pandas, scipy, etc.
+# Example:
+# numpy==1.26.4
+Pillow # For image manipulation 
