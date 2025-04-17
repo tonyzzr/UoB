@@ -3,5 +3,8 @@ uvicorn[standard]
 # Add other dependencies needed by your UoB library for data loading
 # e.g., numpy, pandas, scipy, etc.
 # Example:
-# numpy==1.26.4
+numpy # Already implicitly needed by others, but good to list
 Pillow # For image manipulation 
+torch
+torchvision
+scikit-learn # For PCA 

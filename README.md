@@ -120,7 +120,7 @@ This plan outlines the development of the core processing library (`src/UoB/`) a
 
 **Phase 1: Refactoring and Setup**
 
-1.    [ ] **Establish Directory Structure:** Create the proposed directory structure, including `src/`, `scripts/`, `configs/`, `data/`, `tests/`, `notebooks/`, and `webapp/`.
+1.    [x] **Establish Directory Structure:** Create the proposed directory structure, including `src/`, `scripts/`, `configs/`, `data/`, `tests/`, `notebooks/`, and `webapp/`.
 2.    [ ] **Move & Refactor Existing Code:** Relocate relevant logic from `UoB/legacy` to appropriate locations within the new `src/UoB/` structure, rewriting and improving as needed. *Do not simply copy-paste legacy code.*
     *   `mat_to_mvbv_converter.py` logic -> `src/UoB/preprocessing/mat_converter.py`
     *   `visualize_*.py` logic -> `src/UoB/visualization/` (refactor into reusable functions)
@@ -129,31 +129,38 @@ This plan outlines the development of the core processing library (`src/UoB/`) a
     *   `tissue_structure_coseg.py` logic -> Potentially `src/UoB/features/segmentation.py` or refactor if needed.
 3.    [ ] **Refactor Imports:** Update all import statements to reflect the new structure.
 4.    [ ] **Setup `requirements.txt`:** Consolidate all dependencies.
-5.    [ ] **Implement Basic Configuration:** Set up TOML loading (`tomllib` or `toml`) for dataset paths and basic parameters.
-6.    [ ] **Refactor Preprocessing:**
+5.    [x] **Implement Basic Configuration:** Set up TOML loading (`tomllib` or `toml`) for dataset paths and basic parameters.
+6.    [x] **Refactor Preprocessing:**
     *   Create a `MatConverter` class in `src/UoB/preprocessing/mat_converter.py`.
     *   Make it configurable (input dir, output dir, config paths) via args or a config file.
     *   Create `scripts/preprocess_data.py` to run the conversion, incorporating intermediate file checking/saving.
-7.    [ ] **Refactor Data Loading:**
+7.    [x] **Refactor Data Loading:**
     *   Define `MultiViewBmodeVideo` (and related structures) formally using `dataclasses` in `src/UoB/data/formats.py`.
     *   Create a generic `UltrasoundDataset` class in `src/UoB/data/datasets.py` capable of loading the processed `.pkl` (or chosen format) files based on a config.
-8.  **[WEB APP]** [ ] **Setup Basic Web App Structure:** Initialize backend (e.g., FastAPI in `webapp/backend`) and frontend (e.g., React in `webapp/frontend`) projects, setup basic API communication (CORS, placeholder endpoints), create UI shell.
-9.  **[WEB APP]** [ ] **Build Dataset Explorer:** Create UI component in the frontend to list available processed recordings (`data/processed/*`). Implement a backend API endpoint to serve recording metadata (list directories/files).
+8.  **[WEB APP]** [x] **Setup Basic Web App Structure:** Initialize backend (e.g., FastAPI in `webapp/backend`) and frontend (e.g., React in `webapp/frontend`) projects, setup basic API communication (CORS, placeholder endpoints), create UI shell.
+9.  **[WEB APP]** [x] **Build Dataset Explorer:** Create UI component in the frontend to list available processed recordings (`data/processed/*`). Implement a backend API endpoint to serve recording metadata (list directories/files).
 
 **Phase 2: Feature Extraction and Visualization**
 
-10. [ ] **Integrate Feature Extractors:**
-    *   Wrap foundation models (DINOv2?) and FeatUp into classes in `src/UoB/features/extractors.py` and `src/UoB/features/upsamplers.py`.
-    *   Make model selection configurable (e.g., specify `dino16` via config).
-11. [ ] **Refactor Visualization Code:**
-    *   Move PCA logic and plotting functions from `visualize_features.py` to `src/UoB/visualization/plot_features.py`.
-    *   Move correspondence computation and plotting from `visualize_similarity.py` to `src/UoB/features/matching.py` and `src/UoB/visualization/plot_correspondence.py`.
-    *   Make visualization functions accept data objects (e.g., `MultiViewBmodeVideo` frames) and feature tensors.
-12. [ ] **Create Feature Extraction Script:** Develop `scripts/extract_features.py` that loads data, selects a feature extractor via config, computes features, and optionally saves them.
+10. [x] **Integrate Feature Extractors:**
+    *   [x] Implement foundation model wrapper classes in `src/UoB/features/extractors.py` and `src/UoB/features/upsamplers.py`.
+    *   [x] Make model selection configurable (e.g., specify `dino16` via config).
+    *   [x] Implement registry pattern for model selection.
+11. [x] **Refactor Visualization Code:**
+    *   [x] Move PCA logic and plotting functions from `visualize_features.py` to `src/UoB/visualization/plot_features.py`.
+    *   [ ] Move correspondence computation and plotting from `visualize_similarity.py` to `src/UoB/features/matching.py` and `src/UoB/visualization/plot_correspondence.py`.
+    *   [x] Make visualization functions accept data objects (e.g., `MultiViewBmodeVideo` frames) and feature tensors.
+12. [x] **Create Feature Extraction Script:** 
+    *   [x] Developed `scripts/extract_features.py` that loads data, selects a feature extractor via config, computes features, and saves them to disk.
+    *   [x] Implemented command-line arguments for configuration and frame selection.
+    *   [x] Added capability to process frames in batches with status tracking.
 13. [ ] **Create Visualization Script:** Develop `scripts/visualize.py` with subcommands (e.g., `visualize.py features`, `visualize.py correspondence`) driven by configs.
 14. [ ] **Address Memory Issues:** Systematically apply memory management techniques (CPU/GPU transfer, `del`, `gc.collect`, `torch.cuda.empty_cache`) where needed.
-15. **[WEB APP]** [~] **Visualize Raw Frames:** Enhance Dataset Explorer UI to select a recording and view individual frames (LF/HF, different views) from its `MultiViewBmodeVideo` file. Requires backend API endpoint to load/serve specific frames.
-16. **[WEB APP]** [ ] **Visualize Extracted Features:** Add UI functionality to display pre-computed feature visualizations (e.g., PCA plots) associated with a frame. Requires backend API endpoint to serve feature maps or their visualizations (e.g., load `.png` or compute/cache PCA on demand).
+15. **[WEB APP]** [x] **Visualize Raw Frames:** Enhance Dataset Explorer UI to select a recording and view individual frames (LF/HF, different views) from its `MultiViewBmodeVideo` file.
+16. **[WEB APP]** [x] **Visualize Extracted Features:** 
+    *   [x] Implemented on-demand feature extraction in the data service to eliminate the need to store thousands of large feature files.
+    *   [x] Created API endpoint to visualize features with PCA computation.
+    *   [x] Developed UI component to display 4x8 grid of original and PCA-visualized features.
 17. **[WEB APP]** [ ] **Visualize Correspondences:** Implement interactive correspondence visualization. User selects a source view/point in the UI, backend computes/loads correspondence maps via API, frontend displays interactive overlays on query views.
 
 **Phase 3: Registration and Fusion**

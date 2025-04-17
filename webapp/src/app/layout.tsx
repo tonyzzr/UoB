@@ -16,9 +16,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {/* Layout UI can go here if needed */}
-        {children} {/* Page content will be injected here */}
+      <body className={`${inter.className} bg-[#f0f0f0]`}>
+        {children}
       </body>
     </html>
   );
