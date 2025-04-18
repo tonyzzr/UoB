@@ -1,19 +1,121 @@
 # Changelog
 
+## 2025-04-18
+
+### Feature Visualization & Correspondence UI Improvements
+
+- [x] **Fix Correspondence Visualization Issues:**
+  - [x] Fixed initial green star positioning to match the API response coordinates
+  - [x] Fix remaining green star visibility issues across all query views
+  - [x] Ensure match coordinates from API are correctly interpreted and positioned on images
+  - [x] Add debugging to confirm all match results are being received and processed correctly
+  - [x] Add coordinate clamping and normalization to keep green stars within visible image area
+  - [x] Improve coordinate processing with better feature map coordinate detection and conversion
+  - [x] Add detailed coordinate debugging to help diagnose positioning issues
+  - [x] Add support for mixed coordinate systems (feature map, pixel, and percentage-based)
+  - [x] Implement match confidence visualization with different star sizes and opacity levels
+  - [x] Add self-match validation to verify coordinate processing accuracy
+  - [x] Implement error offset correction using self-match validation results
+  - [x] Add source view to match results for complete debug output
+  - [x] Refine coordinate clamping to use 1% minimum instead of 10% for better accuracy
+  - [x] **ABANDONED:** Client-side coordinate processing approach due to persistent issues with coordinate systems
+- [x] **NEW: Phased Backend Matplotlib Correspondence Visualization:**
+  - [x] **Phase 1: Research & Proof of Concept**
+    - [x] Review existing PCA visualization code in `src/UoB/visualization/plot_features.py`
+    - [x] Review relevant matplotlib coordinate handling and grid plotting
+    - [x] Create a standalone test script that generates a simple correspondence visualization
+    - [x] Test with various coordinate inputs to validate robustness
+  - [x] **Phase 2: Basic Backend Implementation**
+    - [x] Add a minimal endpoint in `webapp/data_service/routers/recordings.py`
+    - [x] Implement basic matplotlib visualization with source view and single query view
+    - [x] Test with controlled inputs before expanding to full grid
+    - [x] Add comprehensive error handling and validation
+  - [x] **Phase 3: Complete Backend Implementation**
+    - [x] Expand to full 16-view grid visualization (8 LF + 8 HF)
+    - [x] Add proper markers for source POI and matches
+    - [x] Add visual indicators for match confidence
+    - [x] Optimize rendering performance
+    - [x] Return as PNG bytes with appropriate caching headers
+  - [x] **Phase 4: Frontend Integration**
+    - [x] Create API route for the new backend endpoint
+    - [x] Update frontend to maintain interactive POI selection
+    - [x] Add visualization request button
+    - [x] Display the resulting image with appropriate loading states
+    - [x] Add fallback visualization for error cases
+- [x] **Improve Image Display in Correspondence Grid:**
+  - [x] Normalize HF and LF image heights while maintaining aspect ratio
+  - [x] Add CSS to ensure consistent image sizing across frequency types
+  - [x] Set explicit heights for HF images to improve layout consistency
+  - [x] Add proper loading states for images
+- [x] **Fix NextJS API Error in Frame Route:**
+  - [x] Update `/api/recordings/[recording_id]/frames/[frame_index]/route.ts` to properly await params
+  - [x] Add error handling and logging to help diagnose issues
+  - [x] Fix the same NextJS params issue in the correspondence API route
+  - [x] Fix the NextJS params issue in the visualize_features API route
+  - [x] Use NextJS recommended approach for handling dynamic route parameters
+- [x] **Enhance User Experience:**
+  - [x] Make correspondence grid images persist when changing POI
+  - [x] Fix handleSourceImageClick to maintain visibility when selecting new POI
+  - [x] Add stronger visual indicators with larger stars and better shadows
+  - [x] Add detailed debug counts for match visibility issues
+  - [x] Add visual confidence indicators for match quality
+  - [x] Add blue circle indicator for self-match validation
+  - [x] Improve performance with optimized image loading and caching
+
 ## 2025-04-17
+
+### PCA Visualization Enhancement
+
+- [x] **Integrate Image Mask into PCA:**
+    - [x] Modify PCA functions (`fit_joint_pca`, `apply_pca_to_features` in `src/UoB/visualization/plot_features.py`) to accept an optional preprocessed binary mask.
+    - [x] Use the mask to select relevant feature vectors for PCA fitting and transformation.
+    - [x] Modify the feature visualization endpoint in `webapp/data_service/main.py` to:
+        - [x] Load the `view_masks` from `MultiViewBmodeVideo` data.
+        - [x] Apply the same preprocessing (e.g., `PadToSquareAndAlign`) to the mask as used for the images.
+        - [x] Threshold the processed mask to make it binary.
+        - [x] Pass the binary mask to the updated PCA functions.
+        - [x] Update endpoint to return the generated plot as PNG bytes.
+    - [x] Adjust `plot_feature_pca_comparison` to handle/display masked regions appropriately in the output visualization.
+    - [x] Added local test case in `plot_features.py` to verify mask processing and PCA application.
+    - [x] Updated Next.js API proxy route (`visualize_features/.../route.ts`) to handle PNG response.
+    - [x] Updated frontend component (`FeatureVisualizer.tsx`) to display the single plot image.
 
 ### Phase 2 & 3: Feature Matching & Correspondence
 
-- [ ] **Refactor Matching Logic (from Task 11):**
-    - [ ] Migrate correspondence computation logic from `legacy/visualize_similarity.py` to `src/UoB/features/matching.py`. Define methods for computing similarity/correlation between extracted deep features.
-- [ ] **Refactor Correspondence Visualization (from Task 11):**
-    - [ ] Migrate correspondence plotting logic from `legacy/visualize_similarity.py` to `src/UoB/visualization/plot_correspondence.py`. Ensure functions accept feature tensors and match data.
-- [ ] **Develop Correspondence Visualization Script (Task 13):**
-    - [ ] Start implementing the `visualize.py correspondence` subcommand.
-    - [ ] It should load features (potentially using `extract_features.py` logic or saved files), compute matches (using `src/UoB/features/matching.py`), and visualize them (using `src/UoB/visualization/plot_correspondence.py`).
-- [ ] **Plan/Start Web App Correspondence Backend (Task 17):**
-    - [ ] Design the API endpoint required for visualizing correspondences interactively in the web app.
-    - [ ] Define how the backend will compute or load correspondence data on demand.
+- [x] **Refactor Matching Logic (from Task 11):**
+    - [x] Migrate correspondence computation logic from `legacy/visualize_similarity.py` to `src/UoB/features/matching.py`. Define methods for computing similarity/correlation between extracted deep features. (`compute_similarity_matrix`, `find_nearest_neighbors`, `find_mutual_nearest_neighbors`, `find_k_nearest_neighbors` added and tested).
+- [x] **Refactor Correspondence Visualization (from Task 11):**
+    - [x] Migrate correspondence plotting logic from `legacy/visualize_similarity.py` to `src/UoB/visualization/plot_correspondence.py`. Implemented `plot_correspondences` for sparse matches and tested with example using real data.
+- [x] **Develop Correspondence Visualization Script (Task 13):**
+    - [x] Created `scripts/visualize.py` with a `correspondence` subcommand using `typer`.
+    - [x] Implemented logic to load config, data, models, extract features, compute similarity, find k-NN matches for random POIs, run joint PCA.
+    - [x] Calls `plot_correspondences` to show results on both original and PCA images.
+    - [ ] (Optional) Add support for MNN matching visualization.
+    - [ ] (Optional) Add support for specifying POIs via arguments instead of random sampling.
+- [x] **Plan/Start Web App Correspondence Backend & Frontend (Task 17):**
+    - [x] **Backend (`webapp/data_service/main.py`):
+        - [x] **Define Endpoint:** Create `POST /recordings/{recording_id}/correspondence/{frame_index}`.
+        - [x] **Define Request Body:** Expect Pydantic model with `source_view_index: int`, `poi_normalized: List[float]`.
+        - [x] **Implement Logic:**
+            - [x] Added feature caching helper `_get_or_compute_frame_features`.
+            - [x] Load data, validate frame/view.
+            - [x] Extract/cache features for source and all query views.
+            - [x] Convert normalized POI `[y, x]` to feature map pixel coords `[r, c]`.
+            - [x] Convert POI coords to flat index, isolate POI feature vector.
+            - [x] Loop through query views: Compute cosine similarity between POI vector and all query vectors, find 1-NN flat index.
+            - [x] Convert match flat index back to 2D coords `[match_r, match_c]`. 
+            - [x] Fixed shape mismatches during feature transform application.
+        - [x] **Define Response:** Return JSON `Dict[query_view_index: int, match_coords: List[int]]` (feature map coords).
+    - [x] **Modularization:** Refactored `webapp/data_service/main.py` into modules (`config.py`, `cache.py`, `utils.py`, `features.py`) and routers (`routers/recordings.py`, `routers/cache.py`, `routers/misc.py`).
+    - [x] **API Proxy (`webapp/src/app/api/...`):
+        - [x] **Create Route:** Add `.../correspondence/[frame_index]/route.ts`.
+        - [x] **Implement `POST` Handler:** Parse params/body, `fetch` backend POST endpoint, forward JSON response/errors.
+    - [x] **Frontend (`webapp/src/components/...`):
+        - [x] **State:** Add state for `sourceViewIndex`, `poiCoords` (normalized), `matchResults`, `isComputing`.
+        - [x] **UI (Grid):** Add hover button ("Select Source") to set `sourceViewIndex`. Overlay markers based on `matchResults`.
+        - [x] **UI (Interactive View):** Display selected source view, handle clicks to set `poiCoords`, display POI marker.
+        - [x] **UI (Button):** Show "Compute" button when `poiCoords` is set.
+        - [x] **API Call:** On button click, call proxy API, update `matchResults` state.
 
 ## 2025-04-16
 
@@ -59,105 +161,32 @@
     *   Wrap upsamplers (FeatUp) into classes in `src/UoB/features/upsamplers.py`. (Placeholder `JointBilateralUpsampler` exists)
     *   Use a **registry pattern**. (Done)
     *   Make upsampler selection configurable (e.g., specify `featup_jbu` with `backbone_hub_id = 'dino16'` via **TOML config**). (Planned)
-    *   [x] **Implement JBU Loading:** Implement `JointBilateralUpsampler._load_model` using `torch.hub.load("mhamilton723/FeatUp", backbone_hub_id, ...)` based on registry key `'featup_jbu'` and configured `backbone_hub_id`.
-    *   [x] **Implement JBU Forward:** Implement `JointBilateralUpsampler.forward` to correctly call the loaded FeatUp model.
-    *   [x] **Refine Feature Dims:** Update `upsampled_feature_dim` property based on the actually loaded backbone (using attribute checks + fallback).
-    *   [x] **Refine Preprocessing:** Use FeatUp's `norm` utility (`third_party.FeatUp.featup.util.norm`) for input normalization in `get_preprocessing_transform`.
-    *   **Standardize Preprocessing:** (Done in placeholder)
-    *   **Configure Model Loading:** (Done: hub call + backbone config via params)
-    *   **Integrate Data Formats:** (Placeholder accepts tensors, full integration later)
-
-- [x] **Refactor Visualization Code (related to features):** (Task 11 from overall plan)
-    *   [x] **Move PCA & Plotting:** Migrate PCA calculation and feature plotting logic from `legacy/visualize_features.py` to `src/UoB/visualization/plot_features.py`. (Functions `apply_pca_to_features`, `fit_joint_pca`, `plot_feature_pca_comparison` created).
-        *   [x] **Refine Joint PCA Logic:** Modify `plot_feature_pca_comparison` so that when `use_joint_pca=True`, it collects features, fits PCA once, and transforms all views with the same model.
-        *   [x] **Fix PCA Dimension Bug:** Corrected transpose logic in `apply_pca_to_features` and `fit_joint_pca` to ensure PCA reduces the *feature* dimension (C) instead of spatial dimensions.
-    *   [x] **Decouple Plotting:** Refactor the functions in `plot_features.py` to accept pre-computed feature tensors and relevant metadata. (Plotting function now takes features list).
-    *   [x] **Web App Integration Link:** Ensure visualization logic supports or interfaces with requirements for Task 16 ([`[WEB APP] Visualize Extracted Features`](#phase-2-feature-extraction-and-visualization-overall-plan---reference)).
-- [x] **Create Feature Extraction Script:** (Task 12 from overall plan)
-    *   [x] Develop `scripts/extract_features.py` to:
-        *   Load data using data loading functions.
-        *   Select and configure feature extractor/upsampler via **TOML config** (leveraging the registry).
-        *   Run feature extraction for all views in a frame range.
-        *   Save extracted features systematically to `data/processed/<recording>/features/`.
-- [x] **Web App Feature Visualization Enhancements:**
-    *   [x] **Implement On-Demand Feature Extraction:** Modified data service to compute features on-the-fly instead of loading from files:
-        *   Loads feature extractor model at server startup
-        *   Processes frames on-demand when requested
-        *   Eliminated the need to store thousands of large feature files
-        *   Added performance tracking for extraction and PCA operations
-    *   [x] **Fix Visualization UI:** Resolved issues with feature visualization endpoint and display.
-- [ ] **Update Visualization Script:** (Task 13 from overall plan)
-    *   [ ] Enhance `scripts/visualize.py` with a subcommand (e.g., `visualize.py features`) that:
-        *   Loads pre-computed features for all 16 views of a frame.
-        *   Uses the refactored functions in `src/UoB/visualization/plot_features.py` (including the 16-view joint PCA) for display.
-
-### Phase 2: Feature Extraction and Visualization (Overall Plan - Reference)
-
-10. [ ] **Integrate Feature Extractors:**
-    *   Wrap foundation models (DINOv2?) and FeatUp into classes in `src/UoB/features/extractors.py` and `src/UoB/features/upsamplers.py`.
-    *   Make model selection configurable (e.g., specify `dino16` via config).
-11. [ ] **Refactor Visualization Code:**
-    *   Move PCA logic and plotting functions from `visualize_features.py` to `src/UoB/visualization/plot_features.py`.
-    *   Move correspondence computation and plotting from `visualize_similarity.py` to `src/UoB/features/matching.py` and `src/UoB/visualization/plot_correspondence.py`.
-    *   Make visualization functions accept data objects (e.g., `MultiViewBmodeVideo` frames) and feature tensors.
-12. [x] **Create Feature Extraction Script:** Develop `scripts/extract_features.py` that loads data, selects a feature extractor via config, computes features, and optionally saves them.
-13. [ ] **Create Visualization Script:** Develop `scripts/visualize.py` with subcommands (e.g., `visualize.py features`, `visualize.py correspondence`) driven by configs.
-14. [ ] **Address Memory Issues:** Systematically apply memory management techniques (CPU/GPU transfer, `del`, `gc.collect`, `torch.cuda.empty_cache`) where needed.
-15. **[WEB APP]** [x] **Visualize Raw Frames:** Enhance Dataset Explorer UI to select a recording and view individual frames (LF/HF, different views) from its `MultiViewBmodeVideo` file. Requires backend API endpoint to load/serve specific frames.
-    - **Setup Python Data Service:** Created a separate FastAPI service (`webapp/data_service`) to handle `.pkl` loading.
-    - **Service Endpoints:** Implemented `/ping`, `/details`, and `/frames` endpoints in the Python service.
-    - **Data Loading & Processing:** Added logic to load `combined_mvbv.pkl`, extract metadata, access specific frame tensors, normalize, and convert frames to PNG using Pillow.
-    - **Debugging:** Resolved issues with TOML `null` parsing, `sys.path` configuration for `src.UoB` imports, log compression saturation (`max_value`), and data orientation (transpose) during preprocessing.
-    - **Next.js API:** Modified details API route and created a new frame API route to proxy requests to the Python service.
-    - **Frontend UI:** Added dropdowns/input for frame selection (frequency, spatial view, frame index) in `DatasetExplorer.tsx`.
-    - **Frontend Display:** Implemented image display using an `<img>` tag pointing to the Next.js frame API route.
-16. **[WEB APP]** [x] **Visualize Extracted Features:** Add UI functionality to display pre-computed feature visualizations (e.g., PCA plots) associated with a frame. Requires backend API endpoint to serve feature maps or their visualizations (e.g., load `.png` or compute/cache PCA on demand).
-    - **Backend API:** Implemented `/recordings/{recording_id}/visualize_features/{frame_index}` endpoint with on-demand feature extraction.
-    - **Memory Optimization:** Eliminated file-based storage by computing features at request time.
-    - **Frontend UI:** Created `FeatureVisualizer.tsx` component for feature visualization display.
-    - **Layout:** Implemented a 4x8 grid layout showing both original and PCA images for all 16 views.
+    *   [x] **Implement JBU Loading:** Implement `JointBilateralUpsampler._load_model` using `torch.hub.load("mhamilton723/FeatUp", backbone_hub_id, ...)`
 
 ## 2025-04-15
 
-### Phase 1: Refactoring and Setup
+### Web App Enhancements & Optimization
 
-- [x] **Establish Directory Structure:** Create the proposed directory structure, including `src/`, `scripts/`, `configs/`, `data/`, `tests/`, `notebooks/`, and `webapp/`.
-- [ ] **Move & Refactor Existing Code:** Relocate relevant logic from `UoB/legacy` to appropriate locations within the new `src/UoB/` structure, rewriting and improving as needed. *Do not simply copy-paste legacy code.*
-    - [ ] **Refactor Preprocessing:** Migrate `legacy/mat_to_mvbv_converter.py` logic to `src/UoB/preprocessing/mat_converter.py`.
-        - [x] **Consolidate Processing:** Move image processing functions from `legacy/data/process.py` to `src/UoB/utils/processing.py`. (Added unit tests)
-        - [x] **Consolidate Formats:** Move settings dataclasses (`MaskSetting`, etc.) and core data structures (`MatData`, `TransPos`, `Bmode`, `MultiViewBmodeVideo`) from `legacy/data/*` to `src/UoB/data/formats.py`. (Added unit tests)
-        - [x] **Refactor Config:** Define TOML structure (`configs/preprocessing/default.toml`), implement TOML loading function (`utils/io.py`), refine `BmodeConfig.from_dict`. (Added unit tests for TOML loading)
-        - [x] **Refactor Readers:** Moved `MatDataLoader` to `src/UoB/data/readers.py` and implemented `RecordingLoader` to load/concatenate full recordings. (Added unit tests)
-        - [x] **Implement Converter:** Created `MatConverter` in `src/UoB/preprocessing/mat_converter.py` orchestrating loading, processing (incl. helper methods), and saving. (Added integration test)
-        - [x] **Handle MVBV:** Integrated the conversion logic from `legacy/data/multiview_bmode.py::Bmode2MultiViewBmodeVideo` into the `MatConverter` class. // Completed as part of 'Implement Converter'.
-    - [ ] **Refactor Data Structures & Loading:**
-        - [ ] Define core data structures (`MultiViewBmodeVideo`, etc.) in `src/UoB/data/formats.py` based on `legacy/data/bmode.py` and `legacy/data/multiview_bmode.py`.
-        - [ ] Refactor MAT file reading logic from `legacy/data/mat.py`, `legacy/data/vsx_mat.py` into `src/UoB/data/readers.py`.
-        - [ ] Adapt dataset loading logic for `src/UoB/data/datasets.py`.
-    - [ ] **Refactor Utilities:** Migrate geometry-related functions from `legacy/data/geo.py` and `legacy/model/*` (e.g., `lie.py`, `spatial_map.py`, `apply_pose.py`) to `src/UoB/utils/`.
-    - [ ] **Refactor Registration:**
-        - [ ] Migrate pose estimation logic from `legacy/model/rela_pose_est.py` to `src/UoB/registration/estimators.py`.
-        - [ ] Migrate fusion logic from `legacy/model/image_fusion.py` to `src/UoB/registration/fusion.py`.
-    - [ ] **Refactor Visualization:** Extract and refactor reusable functions from `legacy/visualize_*.py` into `src/UoB/visualization/`.
-    - [ ] **Analyze & Place Segmentation:** Review `legacy/model/tissue_structure_coseg.py` and integrate its core logic.
-    - [ ] **(Deferred)** Update imports globally.
-- [ ] **Refactor Imports:** Update all import statements to reflect the new structure.
-- [ ] **Setup `requirements.txt`:** Consolidate all dependencies.
-- [ ] **Implement Basic Configuration:** Set up TOML loading (`tomllib` or `toml`) for dataset paths and basic parameters.
-- [ ] **Refactor Preprocessing:**
-    - Create a `MatConverter` class in `src/UoB/preprocessing/mat_converter.py`.
-    - Make it configurable (input dir, output dir, config paths) via args or a config file.
-    - Create `scripts/preprocess_data.py` to run the conversion, incorporating intermediate file checking/saving.
-- [ ] **Refactor Data Loading:**
-    - Define `MultiViewBmodeVideo` (and related structures) formally using `dataclasses` in `src/UoB/data/formats.py`.
-    - Create a generic `UltrasoundDataset` class in `src/UoB/data/datasets.py` capable of loading the processed `.pkl` (or chosen format) files based on a config.
-- **[WEB APP]** [x] **Setup Basic Web App Structure:** Initialize backend (e.g., FastAPI in `webapp/backend`) and frontend (e.g., React in `webapp/frontend`) projects, setup basic API communication (CORS, placeholder endpoints), create UI shell.
-  - Initialized Next.js app (`@latest`, TypeScript, Tailwind, ESLint, App Router, src dir) in `webapp/`.
-  - Fixed nested directory structure issues resulting from `create-next-app`.
-  - Installed necessary type definitions (`@types/node`, `@types/react`).
-  - Resolved TypeScript/Linter errors related to module resolution after dependency installation and structure correction.
-- **[WEB APP]** [x] **Build Dataset Explorer:** Create UI component in the frontend to list available processed recordings (`data/processed/*`). Implement a backend API endpoint to serve recording metadata (list directories/files).
-  - Created API route `webapp/src/app/api/recordings/route.ts` to scan `data/processed/` and return directory names.
-  - Created React component `webapp/src/components/DatasetExplorer.tsx` to fetch and display recordings from the API.
-  - Created basic main page `webapp/src/app/page.tsx` to render the `DatasetExplorer`.
-  - Verified successful display of recordings in the browser. 
+- [x] **Plan/Start Web App Correspondence Backend & Frontend (Task 17):**
+    - [x] **Backend (`webapp/data_service/main.py`):
+        - [x] **Define Endpoint:** Create `POST /recordings/{recording_id}/correspondence/{frame_index}`.
+        - [x] **Define Request Body:** Expect Pydantic model with `source_view_index: int`, `poi_normalized: List[float]`. Optional `k: int`.
+        - [x] **Implement Logic:**
+            - [x] Load data, validate frame/view.
+            - [x] Extract features for source and all query views.
+            - [x] Convert normalized POI `[y, x]` to feature map pixel coords `[r, c]`.
+            - [x] Convert POI coords to flat index, isolate POI feature vector.
+            - [x] Loop through query views: Compute similarity between POI vector and all query vectors, find 1-NN flat index.
+            - [x] Convert match flat index back to 2D coords `[match_r, match_c]`. 
+        - [x] **Define Response:** Return JSON `Dict[query_view_index: int, match_coords: List[int]]`.
+    - [x] **API Proxy (`webapp/src/app/api/...`):
+        - [x] **Create Route:** Add `.../correspondence/[frame_index]/route.ts`.
+        - [x] **Implement `POST` Handler:** Parse params/body, `fetch` backend POST endpoint, forward JSON response/errors.
+    - [x] **Frontend (`webapp/src/components/...`):
+        - [x] **State:** Add state for `sourceViewIndex`, `poiCoords` (normalized), `matchResults`, `isComputing`.
+        - [x] **UI (Grid):** Add hover button ("Select Source") to set `sourceViewIndex`. Overlay markers based on `matchResults`.
+          - *Note:* The backend returns a single composite image (8x4 grid of plots). Plan: Use an absolute 8x4 CSS grid overlay on top of the image. Attach hover/click handlers to the overlay cells corresponding to input views (rows 0 and 2). Map cell index to logical `sourceViewIndex`. 
+          - *Alternative:* If the overlay approach proves too complex/fragile, revert to using a dropdown menu or checkboxes list outside the image to select the source view.
+        - [x] **UI (Interactive View):** Display selected source view, handle clicks to set `poiCoords`, display POI marker.
+        - [x] **UI (Button):** Show "Compute" button when `poiCoords` is set.
+        - [x] **API Call:** On button click, call proxy API, update `matchResults` state.

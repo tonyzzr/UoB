@@ -9,20 +9,26 @@ interface VisualizePageProps {
 }
 
 // This is a Server Component by default in Next.js App Router
-const VisualizePage: React.FC<VisualizePageProps> = ({ params }) => {
-  const { recording_id, frame_index } = params;
+// Define as a standard function component
+function VisualizePage({ params }: VisualizePageProps) {
+  // Don't destructure here
+  // const { recording_id, frame_index } = params;
 
-  // Basic validation or error handling for params could go here
-  if (!recording_id || !frame_index) {
-    return <div>Error: Missing recording ID or frame index.</div>;
-  }
+  // Remove the validation check that accesses params properties here
+  // // Basic validation or error handling for params could go here
+  // // Check if params themselves exist
+  // if (!params || !params.recording_id || !params.frame_index) {
+  //   return <div>Error: Missing recording ID or frame index parameters.</div>;
+  // }
 
+  // Directly pass params to the client component
   return (
     <FeatureVisualizer 
-      recordingId={recording_id} 
-      frameIndex={frame_index} 
+      params={params} // Pass the whole params object
+      // recordingId={recording_id} 
+      // frameIndex={frame_index} 
     />
   );
-};
+}
 
 export default VisualizePage; 

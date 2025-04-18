@@ -1,0 +1,13 @@
+# Default configuration for visualize.py correspondence
+
+[data]
+recording_id = "recording_2022-08-17_trial2-arm"
+# data_root = "data/processed" # Optional: Defaults to <project_root>/data/processed
+
+[features]
+# Path to the feature extractor config (relative to project root)
+config_path = "configs/features/jbu_dino16.toml"
+
+[visualization]
+# Device to use: "cuda", "cpu", or "auto" (defaults to cuda if available)
+device = "auto" 

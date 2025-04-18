@@ -148,20 +148,25 @@ This plan outlines the development of the core processing library (`src/UoB/`) a
     *   [x] Implement registry pattern for model selection.
 11. [x] **Refactor Visualization Code:**
     *   [x] Move PCA logic and plotting functions from `visualize_features.py` to `src/UoB/visualization/plot_features.py`.
-    *   [ ] Move correspondence computation and plotting from `visualize_similarity.py` to `src/UoB/features/matching.py` and `src/UoB/visualization/plot_correspondence.py`.
+    *   [x] Move correspondence computation and plotting from `visualize_similarity.py` to `src/UoB/features/matching.py` and `src/UoB/visualization/plot_correspondence.py`.
     *   [x] Make visualization functions accept data objects (e.g., `MultiViewBmodeVideo` frames) and feature tensors.
 12. [x] **Create Feature Extraction Script:** 
     *   [x] Developed `scripts/extract_features.py` that loads data, selects a feature extractor via config, computes features, and saves them to disk.
     *   [x] Implemented command-line arguments for configuration and frame selection.
     *   [x] Added capability to process frames in batches with status tracking.
-13. [ ] **Create Visualization Script:** Develop `scripts/visualize.py` with subcommands (e.g., `visualize.py features`, `visualize.py correspondence`) driven by configs.
+13. [x] **Create Visualization Script:** Develop `scripts/visualize.py` with subcommands (e.g., `visualize.py features`, `visualize.py correspondence`) driven by configs.
 14. [ ] **Address Memory Issues:** Systematically apply memory management techniques (CPU/GPU transfer, `del`, `gc.collect`, `torch.cuda.empty_cache`) where needed.
 15. **[WEB APP]** [x] **Visualize Raw Frames:** Enhance Dataset Explorer UI to select a recording and view individual frames (LF/HF, different views) from its `MultiViewBmodeVideo` file.
 16. **[WEB APP]** [x] **Visualize Extracted Features:** 
     *   [x] Implemented on-demand feature extraction in the data service to eliminate the need to store thousands of large feature files.
     *   [x] Created API endpoint to visualize features with PCA computation.
     *   [x] Developed UI component to display 4x8 grid of original and PCA-visualized features.
-17. **[WEB APP]** [ ] **Visualize Correspondences:** Implement interactive correspondence visualization. User selects a source view/point in the UI, backend computes/loads correspondence maps via API, frontend displays interactive overlays on query views.
+17. **[WEB APP]** [x] **Visualize Correspondences:** 
+    *   [x] Implemented interactive correspondence visualization UI with source view/point selection.
+    *   [x] Added backend API endpoints for computing correspondences and generating visualizations.
+    *   [x] Created Next.js API routes to forward requests to Python backend.
+    *   [x] Implemented matplotlib-based grid visualization in the backend to eliminate client-side coordinate system issues.
+    *   [x] Added loading states and error handling for a robust user experience.
 
 **Phase 3: Registration and Fusion**
 

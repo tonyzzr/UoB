@@ -5,59 +5,84 @@ const DATA_SERVICE_URL = 'http://localhost:8000'; // Ensure this matches the Pyt
 
 export async function GET(
   request: NextRequest, // Use NextRequest to easily access searchParams
-  { params }: { params: { recording_id: string; frame_index: string } } // Uses recording_id and frame_index
+  context: { params: { recording_id: string; frame_index: string } } // Uses recording_id and frame_index
 ) {
-  const recording_id = params.recording_id; // Uses recording_id
-  const frame_index = params.frame_index; // Uses frame_index
-
-  // Get query parameters (freq, view) from the original request
-  const searchParams = request.nextUrl.searchParams;
-  const freq = searchParams.get('freq');
-  const view = searchParams.get('view');
-
-  if (!freq || !view) {
-    return NextResponse.json({ error: 'Missing required query parameters: freq, view' }, { status: 400 });
-  }
-
-  const pythonServiceUrl = `${DATA_SERVICE_URL}/recordings/${recording_id}/frames/${frame_index}?freq=${encodeURIComponent(freq)}&view=${encodeURIComponent(view)}`;
-
-  console.log(`Next Frame API: Forwarding request to ${pythonServiceUrl}`);
-
   try {
-    // Fetch the image from the Python data service
-    const response = await fetch(pythonServiceUrl, {
-      cache: 'no-store', // Don't cache images between services
-    });
+    // Properly handle params by destructuring them after awaiting the context object
+    const { recording_id, frame_index } = context.params;
+    
+    console.log(`[Next Frames API] Processing frame request for recording: ${recording_id}, frame: ${frame_index}`);
 
-    // Check if the data service responded successfully (status 2xx)
-    if (!response.ok) {
-      console.error(`Next Frame API: Error from data service (${response.status})`);
-      return new NextResponse(response.body, { status: response.status, headers: {'Content-Type': 'application/json'} });
+    if (!recording_id || !frame_index) {
+      return NextResponse.json({ error: 'Missing required parameters: recording_id, frame_index' }, { status: 400 });
     }
 
-    // Check content type - MUST be an image
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.startsWith('image/')) {
-         console.error(`Next Frame API: Data service did not return an image. Content-Type: ${contentType}`);
-         return NextResponse.json({ error: 'Data service did not return an image' }, { status: 502 }); // Bad Gateway
+    // Get query parameters (freq, view) from the original request
+    const searchParams = request.nextUrl.searchParams;
+    const freq = searchParams.get('freq');
+    const view = searchParams.get('view');
+    
+    console.log(`[Next Frames API] Query params: freq=${freq}, view=${view}`);
+
+    if (!freq || !view) {
+      console.error(`[Next Frames API] Missing required parameters: freq=${freq}, view=${view}`);
+      return NextResponse.json({ error: 'Missing required query parameters: freq, view' }, { status: 400 });
     }
 
-    console.log(`Next Frame API: Successfully received image from data service. Content-Type: ${contentType}`);
+    const pythonServiceUrl = `${DATA_SERVICE_URL}/recordings/${recording_id}/frames/${frame_index}?freq=${encodeURIComponent(freq)}&view=${encodeURIComponent(view)}`;
 
-    // Stream the image response back to the client
-    const headers = new Headers();
-    headers.set('Content-Type', contentType);
+    console.log(`[Next Frames API] Forwarding request to ${pythonServiceUrl}`);
 
-    return new NextResponse(response.body, {
-        status: 200,
-        headers: headers,
-    });
+    try {
+      // Fetch the image from the Python data service
+      const response = await fetch(pythonServiceUrl, {
+        cache: 'no-store', // Don't cache images between services
+      });
 
-  } catch (error: any) {
-    console.error(`Next Frame API: Network error fetching from data service:`, error);
-     if (error.code === 'ECONNREFUSED') {
-         return NextResponse.json({ error: `Could not connect to data service at ${DATA_SERVICE_URL}. Is it running?` }, { status: 503 }); // Service Unavailable
+      // Check if the data service responded successfully (status 2xx)
+      if (!response.ok) {
+        console.error(`[Next Frames API] Error from data service (${response.status}): ${await response.text()}`);
+        return new NextResponse(response.body, { status: response.status, headers: {'Content-Type': 'application/json'} });
+      }
+
+      // Check content type - MUST be an image
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.startsWith('image/')) {
+          console.error(`[Next Frames API] Data service did not return an image. Content-Type: ${contentType}`);
+          return NextResponse.json({ error: 'Data service did not return an image' }, { status: 502 }); // Bad Gateway
+      }
+
+      console.log(`[Next Frames API] Successfully received image from data service. Content-Type: ${contentType}`);
+
+      // Stream the image response back to the client
+      const headers = new Headers();
+      headers.set('Content-Type', contentType);
+      // Set caching headers
+      headers.set('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
+
+      return new NextResponse(response.body, {
+          status: 200,
+          headers: headers,
+      });
+
+    } catch (error: any) {
+      console.error(`[Next Frames API] Network error fetching from data service:`, error);
+      if (error.code === 'ECONNREFUSED') {
+          return NextResponse.json({ 
+            error: `Could not connect to data service at ${DATA_SERVICE_URL}. Is it running?`,
+            details: error.message
+          }, { status: 503 }); // Service Unavailable
+      }
+      return NextResponse.json({ 
+        error: 'Internal Server Error forwarding frame request',
+        details: error.message
+      }, { status: 500 });
     }
-    return NextResponse.json({ error: 'Internal Server Error forwarding frame request' }, { status: 500 });
+  } catch (outerError: any) {
+    console.error(`[Next Frames API] Unexpected error in route handler:`, outerError);
+    return NextResponse.json({ 
+      error: 'Unexpected error in API route handler',
+      details: outerError.message
+    }, { status: 500 });
   }
 } 
