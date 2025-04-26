@@ -2,6 +2,10 @@
 
 ## 2025-04-18
 
+
+### alpha params for pck calculation to determine the matching correctness
+### show area correspondence? -- show cosine correlation map?
+
 ### Feature Visualization & Correspondence UI Improvements
 
 - [x] **Fix Correspondence Visualization Issues:**

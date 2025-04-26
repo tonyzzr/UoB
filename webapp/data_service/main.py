@@ -5,6 +5,12 @@ from contextlib import asynccontextmanager
 
 # Import the initialization function and routers
 # Use absolute import relative to webapp dir when running uvicorn from webapp/
+
+import sys, os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+print(f"Project root: {project_root}")
+sys.path.insert(0, project_root)
+
 from data_service.features import init_feature_extractor
 from data_service.routers import recordings, cache, misc
 from data_service.cache import cleanup_pkl_cache
