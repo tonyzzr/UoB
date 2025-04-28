@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link'; // For back button
-import { FaLocationArrow, FaStar, FaSpinner, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
+import { FaLocationArrow, FaStar, FaSpinner, FaExclamationTriangle, FaCheck, FaChevronDown } from 'react-icons/fa';
 
 // Define the structure of the params prop expected from the page
 interface PageParams {
@@ -52,6 +52,26 @@ const FeatureVisualizer: React.FC<FeatureVisualizerProps> = ({ params }) => { //
   const PLOT_COLS = 8;
   const PLOT_ROWS = 4; // 2 rows of images (Input + PCA) per frequency
 
+  // --- Featurizer Config State ---
+  const [featurizers, setFeaturizers] = useState<string[]>([]);
+  const [selectedFeaturizer, setSelectedFeaturizer] = useState<string>('jbu_dinov2');
+  const [isFeaturizerMenuOpen, setIsFeaturizerMenuOpen] = useState<boolean>(false);
+
+  // Fetch featurizer list on mount
+  useEffect(() => {
+    fetch('/api/featurizers')
+      .then(res => res.json())
+      .then(data => {
+        setFeaturizers(data);
+        if (data.length > 0 && !data.includes(selectedFeaturizer)) {
+          setSelectedFeaturizer(data[0]);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch featurizer configs:', err);
+      });
+  }, []);
+
   useEffect(() => {
     console.log("FeatureVisualizer useEffect running. Received params prop:", params);
     
@@ -98,7 +118,7 @@ const FeatureVisualizer: React.FC<FeatureVisualizerProps> = ({ params }) => { //
     setImageUrl(null); // Reset image URL when props change
     
     try {
-      const apiUrl = `/api/recordings/${resolvedParams.recording_id}/visualize_features/${resolvedParams.frame_index}`;
+      const apiUrl = `/api/recordings/${resolvedParams.recording_id}/visualize_features/${resolvedParams.frame_index}?featurizer=${encodeURIComponent(selectedFeaturizer)}`;
       console.log(`Setting image URL to: ${apiUrl}`);
       setImageUrl(apiUrl); // Set the URL, loading/error handled by img tag
       
@@ -115,7 +135,7 @@ const FeatureVisualizer: React.FC<FeatureVisualizerProps> = ({ params }) => { //
     }
     // Note: setIsLoading(false) will now primarily be handled by the image's onLoad/onError
     // or if the initial setup fails.
-  }, [params, resolvedParams]); // Depend on params prop and resolved state
+  }, [params, resolvedParams, selectedFeaturizer]); // Depend on params prop and resolved state
 
   // --- Event Handlers ---
   const handleSourceImageLoad = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -226,14 +246,15 @@ const FeatureVisualizer: React.FC<FeatureVisualizerProps> = ({ params }) => { //
 
     const requestBody = {
       source_view_index: sourceViewIndex,
-      poi_normalized: [poiCoords.y, poiCoords.x] // Send as [y, x]
+      poi_normalized: [poiCoords.y, poiCoords.x],
+      featurizer: selectedFeaturizer,
     };
     
     // Step 1: Call the regular correspondence API for the JSON data (for debugging)
     console.log(`[Frontend] Sending correspondence request for match data...`);
     
     try {
-      const apiUrl = `/api/recordings/${resolvedParams.recording_id}/correspondence/${resolvedParams.frame_index}`;
+      const apiUrl = `/api/recordings/${resolvedParams.recording_id}/correspondence/${resolvedParams.frame_index}?featurizer=${encodeURIComponent(selectedFeaturizer)}`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -321,7 +342,7 @@ const FeatureVisualizer: React.FC<FeatureVisualizerProps> = ({ params }) => { //
     setVisualizationError(null);
     
     try {
-      const visApiUrl = `/api/recordings/${resolvedParams!.recording_id}/visualize_correspondence/${resolvedParams!.frame_index}`;
+      const visApiUrl = `/api/recordings/${resolvedParams!.recording_id}/visualize_correspondence/${resolvedParams!.frame_index}?featurizer=${encodeURIComponent(selectedFeaturizer)}`;
       console.log(`[Frontend] Sending request for visualization to ${visApiUrl}`, requestBody);
       
       // Create a unique cache-busting URL parameter
@@ -591,14 +612,41 @@ const FeatureVisualizer: React.FC<FeatureVisualizerProps> = ({ params }) => { //
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
+          <div className="flex justify-center h-16 items-center">
+            <div className="flex items-center gap-8">
               <Link href="/" className="text-xl font-semibold text-gray-900 hover:text-blue-600">
                 &larr; Back to Explorer
               </Link>
-            </div>
-            <div className="flex items-center">
               <span className="text-lg font-medium text-gray-700">Feature Visualization</span>
+              {/* Featurizer Config Menu */}
+              <div className="relative">
+                <button
+                  className="px-4 py-2 border border-gray-300 rounded shadow-sm bg-white hover:bg-blue-50 flex items-center gap-2"
+                  onClick={() => setIsFeaturizerMenuOpen(v => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={isFeaturizerMenuOpen}
+                >
+                  <span className="font-medium text-blue-700">{selectedFeaturizer}</span>
+                  <FaChevronDown className="text-gray-500" />
+                </button>
+                {isFeaturizerMenuOpen && (
+                  <ul className="absolute left-1/2 -translate-x-1/2 right-auto mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50 list-none pl-0">
+                    {featurizers.map(fz => (
+                      <li key={fz} className="pl-0">
+                        <button
+                          className={`w-full text-left px-4 py-2 hover:bg-blue-100 ${fz === selectedFeaturizer ? 'bg-blue-50 font-semibold' : ''}`}
+                          onClick={() => {
+                            setSelectedFeaturizer(fz);
+                            setIsFeaturizerMenuOpen(false);
+                          }}
+                        >
+                          {fz}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>

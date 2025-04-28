@@ -18,7 +18,14 @@ export async function GET(
     console.log(`[Next API Proxy] Forwarding feature visualization request for ${recording_id}, frame ${frame_index} to data service...`);
 
     try {
-      const targetUrl = `${DATA_SERVICE_URL}/recordings/${recording_id}/visualize_features/${frame_index}`;
+      // Get featurizer query param if present
+      const { searchParams } = new URL(request.url);
+      const featurizer = searchParams.get('featurizer');
+
+      let targetUrl = `${DATA_SERVICE_URL}/recordings/${recording_id}/visualize_features/${frame_index}`;
+      if (featurizer) {
+        targetUrl += `?featurizer=${encodeURIComponent(featurizer)}`;
+      }
       console.log(`[Next API Proxy] Target URL: ${targetUrl}`);
       
       const response = await fetch(targetUrl, {

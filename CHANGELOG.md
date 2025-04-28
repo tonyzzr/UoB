@@ -1,5 +1,82 @@
 # Changelog
 
+## 2025-04-28
+
+### Planned Feature: Featurizer Config Selection Menu for Visualization Page
+
+#### Summary
+- The workspace is organized with a clear separation between frontend (Next.js in `webapp/src`), backend (FastAPI in `webapp/data_service`), and configuration files (`configs/features/`).
+- The feature visualization UI is implemented in `FeatureVisualizer.tsx` and the dynamic route `visualize/[recording_id]/[frame_index]/page.tsx`.
+- Feature visualization API endpoints are under `webapp/src/app/api/recordings/[recording_id]/visualize_features/[frame_index]/route.ts` (proxy) and backend logic in `webapp/data_service/routers/recordings.py`.
+- Featurizer configs are TOML files in `configs/features/` (e.g., `jbu_dinov2.toml`, `jbu_dino16.toml`).
+- No existing endpoint for listing featurizer configs; no config menu in the UI yet.
+
+#### Implementation Plan
+
+- [ ] **Frontend (Next.js):**
+  - [ ] Add an API route to list available featurizer configs (names from `configs/features/`).
+  - [ ] Add a dropdown/menu to the feature visualization page (`FeatureVisualizer.tsx`) for selecting the featurizer config.
+  - [ ] Store the selected featurizer in React state (and optionally in the URL or local storage).
+  - [ ] Update visualization requests to include the selected featurizer config.
+  - [ ] Show a loading indicator while updating the visualization.
+  - [ ] Ensure the menu is accessible and does not disrupt existing UI/UX.
+
+- [ ] **Backend (FastAPI):**
+  - [ ] Add an endpoint to list available featurizer configs by reading `configs/features/`.
+  - [ ] Update the feature visualization endpoint to accept featurizer config name and use the specified config for feature extraction/visualization.
+  - [ ] Validate the config name and handle errors gracefully.
+  - [ ] Update caching logic to account for the featurizer config parameter.
+
+- [ ] **Integration & Testing:**
+  - [ ] Test the end-to-end flow: selecting a featurizer updates the visualization as expected.
+  - [ ] Test error handling for missing/invalid configs.
+  - [ ] Polish the config menu UI/UX and add tooltips or descriptions if needed.
+
+#### Notes
+- The new features will be added in a modular way to avoid disrupting existing functionality.
+- The plan leverages the current file structure and routing conventions for minimal friction.
+
+---
+
+### Improved Mask Resizing Logic for Feature Visualization
+
+#### Summary
+- Enhanced mask preprocessing in the feature visualization pipeline to handle potential format issues.
+- Added normalization step using `clip(0, 1)` to ensure mask arrays contain only valid values before conversion to PIL Images.
+- Applied improvements to both LF and HF view mask processing to maintain consistency across frequency types.
+- Fixed potential errors when working with mask arrays containing values outside the expected range.
+- Improved robustness of the mask resizing process when handling shape mismatches between features and masks.
+
+---
+
+### Dynamic Featurizer Config Switching (Backend)
+
+- [ ] **Design Loader:**
+  - [ ] Each featurizer config is a TOML file in `configs/features/{featurizer}.toml`.
+  - [ ] Implement a function `get_extractor_for_config(featurizer_name: str)` to:
+    - Load the TOML config.
+    - Instantiate the correct extractor and transform according to the config.
+    - Return the extractor and transform.
+
+- [ ] **Implement Caching:**
+  - [ ] Use an in-memory cache (dictionary) to store loaded extractors/transforms by featurizer name.
+  - [ ] On first request for a featurizer, load and cache it; reuse on subsequent requests.
+
+- [ ] **Update Endpoints:**
+  - [ ] In all endpoints that accept a `featurizer` parameter, use the loader to get the correct extractor/transform.
+  - [ ] Fall back to the default if not provided.
+
+- [ ] **Error Handling:**
+  - [ ] If the requested featurizer config does not exist or fails to load, return a clear error message.
+  - [ ] Optionally, fall back to the default extractor and log a warning.
+
+- [ ] **Testing:**
+  - [ ] Test with two or more real, different featurizer configs.
+  - [ ] Confirm that switching the featurizer in the UI results in different feature visualizations and correspondence results.
+
+- [ ] **(Optional) Hot Reloading:**
+  - [ ] Add logic to invalidate/reload cache entries if the TOML file changes, to support config updates without server restart.
+
 ## 2025-04-18
 
 

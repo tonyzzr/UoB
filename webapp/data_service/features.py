@@ -4,6 +4,17 @@ import torch.nn.functional as F
 import time
 from typing import Dict, Any, List, Tuple, Optional
 from fastapi import HTTPException
+import toml
+import os
+
+# Fix import path to find src.UoB
+import sys, os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+print(f"[Features] Project root: {project_root}")
+sys.path.insert(0, project_root)
+
+# Now import from src.UoB
+from src.UoB.features.upsamplers import build_feature_upsampler
 
 # Import from other modules
 from .config import (PROJECT_ROOT, DEFAULT_FEATURE_CONFIG, DEVICE, 
@@ -11,6 +22,37 @@ from .config import (PROJECT_ROOT, DEFAULT_FEATURE_CONFIG, DEVICE,
 from .cache import (get_features_from_cache, add_features_to_cache, 
                     FEATURE_CACHE, FEATURE_CACHE_MAX_FRAMES) # Need direct cache access for cleanup
 from .utils import load_pickle_data
+
+_FEATURIZER_CACHE = {}
+
+# Loader function for dynamic featurizer config switching
+
+def get_extractor_for_config(featurizer_name: str):
+    """
+    Loads the featurizer config from TOML, builds the upsampler/extractor, and returns (upsampler, transform).
+    Uses an in-memory cache to avoid reloading models.
+    """
+    if featurizer_name in _FEATURIZER_CACHE:
+        return _FEATURIZER_CACHE[featurizer_name]
+    
+    # Use absolute path based on project_root
+    config_path = os.path.join(project_root, 'configs', 'features', f"{featurizer_name}.toml")
+    print(f"[Features] Loading config from {config_path}")
+    
+    try:
+        config = toml.load(config_path)
+    except Exception as e:
+        raise RuntimeError(f"Failed to load featurizer config '{featurizer_name}': {e}")
+    
+    upsampler = build_feature_upsampler(config)
+    # Move model to the correct device and set to eval mode
+    upsampler.to(DEVICE)
+    upsampler.eval()
+    print(f"[Features] Built upsampler {featurizer_name} and moved to {DEVICE}")
+    
+    transform = upsampler.get_preprocessing_transform()
+    _FEATURIZER_CACHE[featurizer_name] = (upsampler, transform)
+    return upsampler, transform
 
 # --- Initialization Function ---
 def init_feature_extractor():

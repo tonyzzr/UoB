@@ -2,10 +2,11 @@
 import os
 import io
 import time
+import sys  # Add missing import for sys.stderr
 import numpy as np
 import torch
 import torch.nn.functional as F
-from fastapi import APIRouter, HTTPException, Query, Depends, Request
+from fastapi import APIRouter, HTTPException, Query, Depends, Request, Body
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
@@ -14,7 +15,7 @@ from PIL import Image
 # Import dependencies from other service modules
 from ..config import PROCESSED_DATA_DIR, UOB_AVAILABLE, MultiViewBmodeVideo, DEVICE, DEFAULT_FEATURE_CONFIG
 from ..utils import load_pickle_data # numpy_to_data_uri (now used only in visualize_features)
-from ..features import get_or_compute_frame_features # Keep helper import
+from ..features import get_or_compute_frame_features, get_extractor_for_config # Keep helper import
 
 # Import UoB visualization functions if available
 if UOB_AVAILABLE:
@@ -136,9 +137,10 @@ async def get_frame_image(
 
 @router.get("/visualize_features/{frame_index}")
 async def visualize_features(
-    request: Request, # Add request object to access app state
-    recording_id: str, 
-    frame_index: int
+    request: Request,
+    recording_id: str,
+    frame_index: int,
+    featurizer: Optional[str] = Query(None, description="Featurizer config name (e.g., jbu_dino16)")
 ):
     """
     Computes features and PCA visualization for all 16 views of a frame
@@ -147,9 +149,18 @@ async def visualize_features(
     """
     start_time = time.time()
     
-    # Access extractor and transform from app state via request
-    feature_extractor = request.app.state.feature_extractor
-    feature_transform = request.app.state.feature_transform
+    # Select feature extractor/config based on featurizer param
+    if featurizer:
+        try:
+            feature_extractor, feature_transform = get_extractor_for_config(featurizer)
+            feature_type_label = f"Features ({featurizer.upper()})"
+        except Exception as e:
+            print(f"[Visualize] Error loading featurizer '{featurizer}': {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to load featurizer '{featurizer}': {e}")
+    else:
+        feature_extractor = request.app.state.feature_extractor
+        feature_transform = request.app.state.feature_transform
+        feature_type_label = f"Features ({DEFAULT_FEATURE_CONFIG.upper()})"
 
     print(f"[Visualize Check] UOB_AVAILABLE: {UOB_AVAILABLE}") # Keep checks for debugging
     print(f"[Visualize Check] feature_extractor is None: {feature_extractor is None}") 
@@ -210,6 +221,10 @@ async def visualize_features(
                 feat = feature_extractor(input_tensor_nchw)
                 features_list.append(feat.cpu().numpy()) # Store features [1, C, H, W]
                 
+                # Get feature shape to ensure mask matches
+                feat_shape = feat.shape
+                feat_height, feat_width = feat_shape[2], feat_shape[3]
+                
                 mask_frame_idx = 0 if lftx_mvbv.view_masks.shape[0] == 1 else frame_index
                 mask_tensor_raw = lftx_mvbv.view_masks[mask_frame_idx, i].float()
                 mask_tensor_chw = mask_tensor_raw.unsqueeze(0)
@@ -218,8 +233,20 @@ async def visualize_features(
                     preprocessed_mask_np = preprocessed_mask[0].cpu().numpy()
                 else: # Assume 1 channel
                     preprocessed_mask_np = preprocessed_mask.squeeze(0).cpu().numpy()
+                
+                # Ensure mask shape matches feature shape by resizing if needed
+                if preprocessed_mask_np.shape != (feat_height, feat_width):
+                    print(f"[Router] Mask shape {preprocessed_mask_np.shape} doesn't match feature shape ({feat_height}, {feat_width}). Resizing mask.")
+                    # Make sure the mask is in the correct format before conversion (0-1 float)
+                    mask_normalized = preprocessed_mask_np.clip(0, 1)
+                    # Convert to PIL Image for resizing, then back to numpy
+                    pil_mask = Image.fromarray((mask_normalized * 255).astype(np.uint8))
+                    pil_mask_resized = pil_mask.resize((feat_width, feat_height), Image.BILINEAR)
+                    preprocessed_mask_np = np.array(pil_mask_resized) / 255.0
+                
                 binary_mask = preprocessed_mask_np > MASK_THRESHOLD
                 processed_masks_list.append(binary_mask)
+                print(f"[Router] LF View {i}: Feature shape: {feat_shape}, Mask shape: {binary_mask.shape}")
 
             # HF Views
             for i in range(hftx_mvbv.n_view):
@@ -231,6 +258,10 @@ async def visualize_features(
                 feat = feature_extractor(input_tensor_nchw)
                 features_list.append(feat.cpu().numpy())
                 
+                # Get feature shape to ensure mask matches
+                feat_shape = feat.shape
+                feat_height, feat_width = feat_shape[2], feat_shape[3]
+                
                 mask_frame_idx = 0 if hftx_mvbv.view_masks.shape[0] == 1 else frame_index
                 mask_tensor_raw = hftx_mvbv.view_masks[mask_frame_idx, i].float()
                 mask_tensor_chw = mask_tensor_raw.unsqueeze(0)
@@ -239,8 +270,20 @@ async def visualize_features(
                     preprocessed_mask_np = preprocessed_mask[0].cpu().numpy()
                 else: # Assume 1 channel
                     preprocessed_mask_np = preprocessed_mask.squeeze(0).cpu().numpy()
+                
+                # Ensure mask shape matches feature shape by resizing if needed
+                if preprocessed_mask_np.shape != (feat_height, feat_width):
+                    print(f"[Router] Mask shape {preprocessed_mask_np.shape} doesn't match feature shape ({feat_height}, {feat_width}). Resizing mask.")
+                    # Make sure the mask is in the correct format before conversion (0-1 float)
+                    mask_normalized = preprocessed_mask_np.clip(0, 1)
+                    # Convert to PIL Image for resizing, then back to numpy
+                    pil_mask = Image.fromarray((mask_normalized * 255).astype(np.uint8))
+                    pil_mask_resized = pil_mask.resize((feat_width, feat_height), Image.BILINEAR)
+                    preprocessed_mask_np = np.array(pil_mask_resized) / 255.0
+                
                 binary_mask = preprocessed_mask_np > MASK_THRESHOLD
                 processed_masks_list.append(binary_mask)
+                print(f"[Router] HF View {i}: Feature shape: {feat_shape}, Mask shape: {binary_mask.shape}")
                 
         extract_end_time = time.time()
         print(f"[Router] Feature/Mask extraction took {extract_end_time - extract_start_time:.2f}s")
@@ -254,7 +297,7 @@ async def visualize_features(
                 input_images_to_plot=processed_images_list,
                 features=features_list,
                 masks=processed_masks_list, 
-                feature_type_label=f"Features ({DEFAULT_FEATURE_CONFIG.upper()})",
+                feature_type_label=feature_type_label,
                 view_labels=view_labels,
                 use_joint_pca=True,
                 pca_n_components=3,
@@ -285,10 +328,11 @@ async def visualize_features(
 
 @router.post("/correspondence/{frame_index}")
 async def get_correspondence(
-    request: Request, # Add request object
+    request: Request,
     recording_id: str,
     frame_index: int,
-    req_body: CorrespondenceRequest # Rename Pydantic model param to avoid conflict
+    req_body: CorrespondenceRequest = Body(...),
+    featurizer: Optional[str] = Query(None, description="Featurizer config name (e.g., jbu_dino16)")
 ):
     """
     Finds the best matching point(s) in query views for a given source Point of Interest (POI).
@@ -298,9 +342,16 @@ async def get_correspondence(
     start_time = time.time()
     print(f"[Router] Correspondence request: rec={recording_id}, frame={frame_index}, req={req_body}")
     
-    # Access extractor and transform from app state via request
-    feature_extractor = request.app.state.feature_extractor
-    feature_transform = request.app.state.feature_transform
+    # Select feature extractor/config based on featurizer param
+    if featurizer:
+        try:
+            feature_extractor, feature_transform = get_extractor_for_config(featurizer)
+        except Exception as e:
+            print(f"[Correspondence] Error loading featurizer '{featurizer}': {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to load featurizer '{featurizer}': {e}")
+    else:
+        feature_extractor = request.app.state.feature_extractor
+        feature_transform = request.app.state.feature_transform
 
     if feature_extractor is None or feature_transform is None:
         print("[Correspond Check] Extractor/Transform missing in app state, raising 503...")
@@ -396,7 +447,8 @@ async def visualize_correspondence(
     request: Request,
     recording_id: str,
     frame_index: int,
-    req_body: CorrespondenceRequest
+    req_body: CorrespondenceRequest = Body(...),
+    featurizer: Optional[str] = Query(None, description="Featurizer config name (e.g., jbu_dino16)")
 ):
     """
     Generates a matplotlib visualization of computed correspondences across all 16 views.
@@ -405,10 +457,17 @@ async def visualize_correspondence(
     start_time = time.time()
     print(f"[Router] Correspondence visualization request: rec={recording_id}, frame={frame_index}, req={req_body}")
     
-    # Access extractor and transform from app state
-    feature_extractor = request.app.state.feature_extractor
-    feature_transform = request.app.state.feature_transform
-    
+    # Select feature extractor/config based on featurizer param
+    if featurizer:
+        try:
+            feature_extractor, feature_transform = get_extractor_for_config(featurizer)
+        except Exception as e:
+            print(f"[VisCorr] Error loading featurizer '{featurizer}': {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to load featurizer '{featurizer}': {e}")
+    else:
+        feature_extractor = request.app.state.feature_extractor
+        feature_transform = request.app.state.feature_transform
+
     if feature_extractor is None or feature_transform is None:
         raise HTTPException(status_code=503, detail="Feature extraction module not correctly initialized in app state.")
     
