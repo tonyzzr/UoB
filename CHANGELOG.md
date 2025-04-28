@@ -16,10 +16,10 @@
 - [x] **Frontend (Next.js):**
   - [x] Add an API route to list available featurizer configs (names from `configs/features/`).
   - [x] Add a dropdown/menu to the feature visualization page (`FeatureVisualizer.tsx`) for selecting the featurizer config.
-  - [ ] Store the selected featurizer in React state (and optionally in the URL or local storage).
-  - [ ] Update visualization requests to include the selected featurizer config.
-  - [ ] Show a loading indicator while updating the visualization.
-  - [ ] Ensure the menu is accessible and does not disrupt existing UI/UX.
+  - [x] Store the selected featurizer in React state (and optionally in the URL or local storage).
+  - [x] Update visualization requests to include the selected featurizer config.
+  - [x] Show a loading indicator while updating the visualization.
+  - [x] Ensure the menu is accessible and does not disrupt existing UI/UX.
 
 - [ ] **Backend (FastAPI):**
   - [ ] Add an endpoint to list available featurizer configs by reading `configs/features/`.
@@ -37,6 +37,7 @@
 - The plan leverages the current file structure and routing conventions for minimal friction.
 - Backend support for featurizer config selection has been implemented, including validation and error handling.
 - Mask handling has been improved to ensure proper resizing when feature shapes don't match.
+- Frontend implementation has been completed: the API route now dynamically reads available featurizer configs from the configs/features directory, making all six featurizer options (jbu_clip, jbu_dino16, jbu_dinov2, jbu_maskclip, jbu_resnet50, jbu_vit) available in the UI dropdown.
 
 ## 2025-04-18
 
