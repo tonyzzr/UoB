@@ -13,9 +13,9 @@
 
 #### Implementation Plan
 
-- [ ] **Frontend (Next.js):**
-  - [ ] Add an API route to list available featurizer configs (names from `configs/features/`).
-  - [ ] Add a dropdown/menu to the feature visualization page (`FeatureVisualizer.tsx`) for selecting the featurizer config.
+- [x] **Frontend (Next.js):**
+  - [x] Add an API route to list available featurizer configs (names from `configs/features/`).
+  - [x] Add a dropdown/menu to the feature visualization page (`FeatureVisualizer.tsx`) for selecting the featurizer config.
   - [ ] Store the selected featurizer in React state (and optionally in the URL or local storage).
   - [ ] Update visualization requests to include the selected featurizer config.
   - [ ] Show a loading indicator while updating the visualization.
@@ -23,9 +23,9 @@
 
 - [ ] **Backend (FastAPI):**
   - [ ] Add an endpoint to list available featurizer configs by reading `configs/features/`.
-  - [ ] Update the feature visualization endpoint to accept featurizer config name and use the specified config for feature extraction/visualization.
-  - [ ] Validate the config name and handle errors gracefully.
-  - [ ] Update caching logic to account for the featurizer config parameter.
+  - [x] Update the feature visualization endpoint to accept a featurizer config parameter and use the specified config for feature extraction/visualization.
+  - [x] Validate the config name and handle errors gracefully.
+  - [x] Update caching logic to account for the featurizer config parameter.
 
 - [ ] **Integration & Testing:**
   - [ ] Test the end-to-end flow: selecting a featurizer updates the visualization as expected.
@@ -35,47 +35,8 @@
 #### Notes
 - The new features will be added in a modular way to avoid disrupting existing functionality.
 - The plan leverages the current file structure and routing conventions for minimal friction.
-
----
-
-### Improved Mask Resizing Logic for Feature Visualization
-
-#### Summary
-- Enhanced mask preprocessing in the feature visualization pipeline to handle potential format issues.
-- Added normalization step using `clip(0, 1)` to ensure mask arrays contain only valid values before conversion to PIL Images.
-- Applied improvements to both LF and HF view mask processing to maintain consistency across frequency types.
-- Fixed potential errors when working with mask arrays containing values outside the expected range.
-- Improved robustness of the mask resizing process when handling shape mismatches between features and masks.
-
----
-
-### Dynamic Featurizer Config Switching (Backend)
-
-- [ ] **Design Loader:**
-  - [ ] Each featurizer config is a TOML file in `configs/features/{featurizer}.toml`.
-  - [ ] Implement a function `get_extractor_for_config(featurizer_name: str)` to:
-    - Load the TOML config.
-    - Instantiate the correct extractor and transform according to the config.
-    - Return the extractor and transform.
-
-- [ ] **Implement Caching:**
-  - [ ] Use an in-memory cache (dictionary) to store loaded extractors/transforms by featurizer name.
-  - [ ] On first request for a featurizer, load and cache it; reuse on subsequent requests.
-
-- [ ] **Update Endpoints:**
-  - [ ] In all endpoints that accept a `featurizer` parameter, use the loader to get the correct extractor/transform.
-  - [ ] Fall back to the default if not provided.
-
-- [ ] **Error Handling:**
-  - [ ] If the requested featurizer config does not exist or fails to load, return a clear error message.
-  - [ ] Optionally, fall back to the default extractor and log a warning.
-
-- [ ] **Testing:**
-  - [ ] Test with two or more real, different featurizer configs.
-  - [ ] Confirm that switching the featurizer in the UI results in different feature visualizations and correspondence results.
-
-- [ ] **(Optional) Hot Reloading:**
-  - [ ] Add logic to invalidate/reload cache entries if the TOML file changes, to support config updates without server restart.
+- Backend support for featurizer config selection has been implemented, including validation and error handling.
+- Mask handling has been improved to ensure proper resizing when feature shapes don't match.
 
 ## 2025-04-18
 
