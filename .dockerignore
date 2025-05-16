@@ -1,0 +1,52 @@
+# Environments and cache
+.env
+.venv
+env/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+
+# Legacy code - explicitly exclude
+legacy/
+/legacy
+UoB/legacy
+
+# Git
+.git
+.gitignore
+
+# Node.js
+webapp/node_modules
+webapp/.next
+webapp/out
+webapp/.cache
+webapp/.turbo
+
+# Data files (if needed, these should be mounted as volumes)
+data/
+*.mat
+*.pkl
+*.pt
+*.npy
+
+# Development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+*.md
+!README.md
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db 

@@ -1,0 +1,10 @@
+services:
+  web:
+    image: uob-webapp:latest       # or build: .
+    container_name: uob-webapp
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    volumes:
+      - /home/tonyz/code_bases/UoB/data:/app/data
+    restart: unless-stopped
