@@ -8,3 +8,5 @@ Pillow # For image manipulation
 torch
 torchvision
 scikit-learn # For PCA 
+toml 
+matplotlib

@@ -344,12 +344,14 @@ async def get_correspondence(
     
     # Select feature extractor/config based on featurizer param
     if featurizer:
+        print(f"[Correspondence] Loading featurizer '{featurizer}'...")
         try:
             feature_extractor, feature_transform = get_extractor_for_config(featurizer)
         except Exception as e:
             print(f"[Correspondence] Error loading featurizer '{featurizer}': {e}")
             raise HTTPException(status_code=400, detail=f"Failed to load featurizer '{featurizer}': {e}")
     else:
+        print("[Correspondence] No featurizer specified, using default extractor from app state...")
         feature_extractor = request.app.state.feature_extractor
         feature_transform = request.app.state.feature_transform
 

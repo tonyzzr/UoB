@@ -18,13 +18,13 @@ The ultimate goal is to provide a tool for analyzing tissue structure and dynami
 ```
 .
 ├── configs/                  # Configuration files (TOML format) for pipelines, models, datasets
-│   ├── dataset/
+│   ├── dataset/              # Config files for specific datasets/recordings
 │   │   └── recording_xyz.toml
-│   ├── features/
+│   ├── features/             # Configuration for feature extractors
 │   │   └── dino_featup.toml
-│   ├── registration/
+│   ├── registration/         # Configuration for registration algorithms
 │   │   └── default_ransac.toml
-│   └── pipelines/
+│   └── pipelines/            # Configuration for end-to-end processing pipelines
 │       └── full_process.toml
 ├── data/                     # Raw and processed data storage (or symlinks)
 │   ├── raw/                  # Original .mat files (or organized by recording)
@@ -33,14 +33,14 @@ The ultimate goal is to provide a tool for analyzing tissue structure and dynami
 │   │       └── 1_LF.mat
 │   └── processed/            # Processed datasets & Intermediate Files (structured)
 │       └── recording_2022-08-17_trial2-arm/
-│           ├── combined_mvbv.pkl                 # Base processed data
-│           ├── features/                  # Example intermediate feature files
+│           ├── combined_mvbv.pkl            # Base processed data
+│           ├── features/                    # Example intermediate feature files
 │           │   └── 1_lftx_frame0_dino_featup.pt
-│           ├── matches/                   # Example intermediate matches
+│           ├── matches/                     # Example intermediate matches
 │           │   └── 1_lftx0_hftx0_matches.npy
-│           ├── poses/                     # Example intermediate poses
+│           ├── poses/                       # Example intermediate poses
 │           │   └── 1_lftx_hftx_pose_ransac_v1.toml
-│           └── visualizations/            # Example output visualizations
+│           └── visualizations/              # Example output visualizations
 │               └── 1_fused_sequence.mp4
 ├── scripts/                  # Standalone scripts for specific tasks
 │   ├── preprocess_data.py    # Script to run preprocessing pipeline
@@ -49,7 +49,7 @@ The ultimate goal is to provide a tool for analyzing tissue structure and dynami
 │   ├── run_tracking.py       # Script for tracking
 │   └── visualize.py          # Script for various visualizations
 ├── src/                      # Main source code
-│   ├── UoB/                  # Core library modules (can be renamed)
+│   ├── UoB/                  # Core library modules
 │   │   ├── __init__.py
 │   │   ├── data/             # Data loading, representation (e.g., MultiViewBmodeVideo)
 │   │   │   ├── __init__.py
@@ -88,21 +88,71 @@ The ultimate goal is to provide a tool for analyzing tissue structure and dynami
 │   ├── 2_feature_exploration.ipynb
 │   ├── 3_registration_fusion.ipynb
 │   └── 4_tracking.ipynb
-├── webapp/                   # Web application for interactive visualization
-│   ├── backend/              # FastAPI backend 
-│   │   ├── app/
-│   │   ├── main.py
-│   │   └── requirements.txt
-│   └── frontend/             # React/Vue/Svelte frontend
-│       ├── public/
-│       ├── src/
-│       └── package.json
+├── webapp/                   # Next.js web application for interactive visualization
+│   ├── src/                  # Frontend source code
+│   │   ├── app/              # Next.js app directory
+│   │   │   ├── api/          # API route handlers
+│   │   │   │   ├── featurizers/  # API routes for feature extraction
+│   │   │   │   └── recordings/   # API routes for recording data
+│   │   │   ├── visualize/    # Dynamic Next.js routes for visualization
+│   │   │   │   └── [recording_id]/[frame_index]/ # Dynamic route for frame visualization
+│   │   │   │       └── page.tsx   # React component for frame visualization page
+│   │   │   ├── layout.tsx    # Root layout component
+│   │   │   ├── page.tsx      # Home page component
+│   │   │   └── globals.css   # Global CSS styles
+│   │   └── components/       # Reusable React components
+│   │       ├── FeatureVisualizer.tsx  # Component for visualizing features
+│   │       └── DatasetExplorer.tsx    # Component for exploring datasets
+│   ├── data_service/         # FastAPI backend service for data processing
+│   │   ├── routers/          # API route handlers
+│   │   │   ├── __init__.py   # Router initialization
+│   │   │   ├── recordings.py # Endpoints for recording data (frames, features, correspondence)
+│   │   │   ├── cache.py      # Endpoints for cache management
+│   │   │   └── misc.py       # Miscellaneous endpoints (ping, etc.)
+│   │   ├── main.py           # FastAPI application setup and initialization
+│   │   ├── features.py       # Feature extraction utilities
+│   │   ├── utils.py          # Utility functions for data handling
+│   │   ├── cache.py          # Cache management for feature data
+│   │   ├── config.py         # Configuration settings
+│   │   └── requirements.txt  # Python dependencies for the data service
+│   ├── public/               # Static assets
+│   ├── package.json          # Node.js dependencies and scripts
+│   ├── tsconfig.json         # TypeScript configuration
+│   ├── next.config.ts        # Next.js configuration
+│   └── README.md             # Web application documentation
 ├── third_party/              # External libraries/code (e.g., FeatUp, part_cosegmentation)
 ├── tests/                    # Unit and integration tests
-├── requirements.txt          # Python dependencies
+├── requirements.txt          # Python dependencies for the core library
+├── Dockerfile                # Docker configuration for containerization
+├── docker-compose.yml        # Docker Compose configuration
 └── README.md                 # This file
 
 ```
+
+**Key Files and Functions:**
+
+**webapp/data_service/**:
+- `main.py`: FastAPI application setup with lifespan management for initializing feature extractors
+- `features.py`: Handles feature extraction, provides functions for obtaining features with caching
+- `cache.py`: Implements a caching system for feature data to avoid redundant computation
+- `config.py`: Configuration settings for paths, device selection, and feature defaults
+- `utils.py`: Utility functions for data loading and processing
+
+**webapp/data_service/routers/**:
+- `recordings.py`: Main API endpoints for:
+  - `/recordings/{id}/details`: Gets recording metadata
+  - `/recordings/{id}/frames/{frame_index}`: Retrieves frame images
+  - `/recordings/{id}/visualize_features/{frame_index}`: Generates PCA visualizations of features
+  - `/recordings/{id}/correspondence/{frame_index}`: Computes correspondence between views
+  - `/recordings/{id}/visualize_correspondence/{frame_index}`: Visualizes correspondence with matplotlib
+
+**webapp/src/components/**:
+- `DatasetExplorer.tsx`: React component for browsing and selecting recordings
+- `FeatureVisualizer.tsx`: React component for visualizing feature correspondences and PCA
+
+**webapp/src/app/**:
+- Dynamic routes for visualization with server-side rendering
+- API route handlers that forward requests to the Python data service
 
 **Key Design Principles:**
 
