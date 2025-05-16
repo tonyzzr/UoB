@@ -1,0 +1,10 @@
+# Configuration for the FeatUp Joint Bilateral Upsampler using ResNet50 backbone
+
+# Registry key for the upsampler class
+name = "featup_jbu"
+
+# Parameters passed to the JointBilateralUpsampler constructor
+[params]
+backbone_hub_id = "resnet50" # Identifier for torch.hub.load("mhamilton723/FeatUp", ...)
+use_norm = true           # Whether to use the FeatUp variant with LayerNorm
+target_size = 224         # Target input image size after padding 

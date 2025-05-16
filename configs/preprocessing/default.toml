@@ -1,0 +1,84 @@
+# Default configuration for B-mode preprocessing
+
+# General settings applicable to both LF and HF unless overridden
+[general]
+# scale_bar = 0.08 # Original value leading to large images
+scale_bar = 0.2682 # Adjusted to target height ~224px while maintaining aspect ratio
+
+# Low-Frequency (LF) specific settings (can inherit from general)
+[lftx]
+# scale_bar = 0.08 # Can override general if needed
+
+# Settings for each processing step for LF
+[lftx.mask]
+enable = true
+main_lobe_beamwidth = 25.0
+soft_boundary = true
+softness = 0.5 # smaller the smoother
+
+[lftx.log_compression]
+enable = true
+dynamic_range = 80.0
+# max_value = null # Or null/None if calculated per image
+
+[lftx.speckle_reduction]
+enable = true
+# enable = false
+med_blur_kernal = 3
+nlm_h = 9.0
+nlm_template_window_size = 7
+nlm_search_window_size = 11
+
+[lftx.reject_grating_lobe]
+enable = true
+# enable = false
+
+[lftx.histogram_match]
+# Usually only enabled for one frequency or applied differently
+enable = false
+# ref_ind = 0
+# background_removal = true
+
+[lftx.time_gain_compensation]
+# enable = true
+enable = false
+tgc_threshold = 0.75
+tgc_slope = 10.0
+
+# High-Frequency (HF) specific settings (can inherit from general)
+[hftx]
+# scale_bar = 0.08 # Can override general if needed
+
+[hftx.mask]
+enable = true
+main_lobe_beamwidth = 10.0 # Might differ from LF
+soft_boundary = true
+softness = 0.5
+
+[hftx.log_compression]
+enable = true
+dynamic_range = 80.0 # Might differ
+
+[hftx.speckle_reduction]
+enable = true
+# enable = false
+med_blur_kernal = 3 # Might differ
+nlm_h = 9.0
+nlm_template_window_size = 7
+nlm_search_window_size = 11
+
+[hftx.reject_grating_lobe]
+enable = true
+
+[hftx.histogram_match]
+# Example: Enable for HF and use LF (index 0) as reference?
+# This might need adjustment based on actual desired workflow.
+# enable = true
+# ref_ind = 0 # Needs careful consideration of how matching is done
+# background_removal = true
+enable = false # Keeping disabled for now
+
+[hftx.time_gain_compensation]
+enable = false
+tgc_threshold = 0.8
+tgc_slope = 12.0 

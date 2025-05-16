@@ -1,0 +1,18 @@
+load_size: 150
+
+model_type: 'dino_vits8'
+layer: 11
+facet: 'key'
+
+num_parts: 3
+num_crop_augmentations: 20
+
+bin: false
+thresh: 0.15
+stride: 4
+elbow: 0.975
+votes_percentage: 75
+sample_interval: 100
+low_res_saliency_maps: false
+three_stages: false
+elbow_second_stage: 0.94

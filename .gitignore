@@ -1,0 +1,18 @@
+./data/
+*.mat
+*.pkl
+*.pt
+
+./correspondence_cache/
+*.npy
+# Large files (>10MB)
+*.pkl
+*.npy
+*.pt
+*.pack
+*.node
+*.so.*
+/data/processed/**/*.pkl
+/interactive_correspondence/correspondence_cache/*.npy
+/.git/objects/pack/*
+*.pkl
