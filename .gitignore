@@ -16,3 +16,5 @@
 /interactive_correspondence/correspondence_cache/*.npy
 /.git/objects/pack/*
 *.pkl
+
+/data/formatted/*

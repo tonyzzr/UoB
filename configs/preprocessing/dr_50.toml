@@ -18,7 +18,7 @@ softness = 0.5 # smaller the smoother
 
 [lftx.log_compression]
 enable = true
-dynamic_range = 60.0
+dynamic_range = 50.0
 # max_value = null # Or null/None if calculated per image
 
 [lftx.speckle_reduction]
@@ -57,7 +57,7 @@ softness = 0.5
 
 [hftx.log_compression]
 enable = true
-dynamic_range = 60.0 # Might differ
+dynamic_range = 50.0 # Might differ
 
 [hftx.speckle_reduction]
 enable = true
