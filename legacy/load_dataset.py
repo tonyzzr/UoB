@@ -10,7 +10,9 @@ project_root = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(project_root))
 sys.path.append(str(project_root.parent))
 
-def load_and_visualize_frame(mvbv_path: str, frame_idx: int = 0):
+def load_and_visualize_frame(mvbv_path: str, 
+                             frame_idx: int = 0,
+                             do_plot: bool = True):
     """
     Load and visualize a specific frame from a MultiViewBmodeVideo pickle file.
     Shows all 8 views for both LFTX and HFTX.
@@ -22,9 +24,22 @@ def load_and_visualize_frame(mvbv_path: str, frame_idx: int = 0):
     # Load the MultiViewBmodeVideo dictionary
     with open(mvbv_path, 'rb') as f:
         mvbvs = pickle.load(f)
+
+    if do_plot:
+        axes = visualize_frame(mvbvs, frame_idx)
+        plt.suptitle(f'Frame {frame_idx}')
+        plt.tight_layout()
+        plt.show()
+
+    return mvbvs
+
+def visualize_frame(mvbvs, 
+                    frame_idx: int, 
+                    axes: plt.Axes = None) -> plt.Axes:
     
-    # Create a figure with 2x8 subplots (LFTX on top row, HFTX on bottom row)
-    fig, axes = plt.subplots(2, 8, figsize=(20, 5))
+    if axes is None:
+        # Create a figure with 2x8 subplots (LFTX on top row, HFTX on bottom row)
+        fig, axes = plt.subplots(2, 8, figsize=(20, 5))
     
     # Plot LFTX data - all 8 views
     for view_idx in range(8):
@@ -32,7 +47,7 @@ def load_and_visualize_frame(mvbv_path: str, frame_idx: int = 0):
         im = axes[0, view_idx].imshow(lftx_frame, cmap='gray')
         axes[0, view_idx].set_title(f'LFTX View {view_idx}')
         axes[0, view_idx].axis('off')
-        plt.colorbar(im, ax=axes[0, view_idx])
+        # plt.colorbar(im, ax=axes[0, view_idx])
     
     # Plot HFTX data - all 8 views
     for view_idx in range(8):
@@ -40,11 +55,14 @@ def load_and_visualize_frame(mvbv_path: str, frame_idx: int = 0):
         im = axes[1, view_idx].imshow(hftx_frame, cmap='gray')
         axes[1, view_idx].set_title(f'HFTX View {view_idx}')
         axes[1, view_idx].axis('off')
-        plt.colorbar(im, ax=axes[1, view_idx])
+        # plt.colorbar(im, ax=axes[1, view_idx])
     
-    plt.suptitle(f'Frame {frame_idx}')
-    plt.tight_layout()
-    plt.show()
+
+    # plt.suptitle(f'Frame {frame_idx}')
+    # plt.tight_layout()
+    # plt.show()
+
+    return axes
 
 if __name__ == '__main__':
     # Example usage
