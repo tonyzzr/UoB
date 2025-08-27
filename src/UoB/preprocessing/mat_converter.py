@@ -137,6 +137,8 @@ class MatConverter:
         if mvbv_lf is None or mvbv_hf is None:
             warnings.warn(f"Conversion to MVBV failed for {recording_id}. Skipping saving.")
             return
+        
+        # import pdb; pdb.set_trace()
 
         # 5. Save Combined Result
         print(f"Saving combined data to {output_path}...")
@@ -392,6 +394,7 @@ class MatConverter:
                  warnings.warn(f"Invalid aperture width ({aperture_width}) for view {i}. Using default mask.")
                  mask_seq_list.append(np.ones((h, w)))
                  continue
+            # import pdb; pdb.set_trace()
                  
             apex_x = (left_edge_x + right_edge_x) / 2.0
             # Use tan(half_angle) = (half_aperture) / |apex_z|

@@ -39,7 +39,7 @@ def visualize_frame(mvbvs,
     
     if axes is None:
         # Create a figure with 2x8 subplots (LFTX on top row, HFTX on bottom row)
-        fig, axes = plt.subplots(2, 8, figsize=(20, 5))
+        fig, axes = plt.subplots(4, 8, figsize=(20, 10))
     
     # Plot LFTX data - all 8 views
     for view_idx in range(8):
@@ -47,14 +47,26 @@ def visualize_frame(mvbvs,
         im = axes[0, view_idx].imshow(lftx_frame, cmap='gray')
         axes[0, view_idx].set_title(f'LFTX View {view_idx}')
         axes[0, view_idx].axis('off')
+        
+        mask = mvbvs['lftx'].view_masks[0, view_idx, :, :]
+        axes[1, view_idx].imshow(mask, cmap='gray')
+        axes[1, view_idx].set_title(f'LFTX Mask {view_idx}')
+        axes[1, view_idx].axis('off')
+
         # plt.colorbar(im, ax=axes[0, view_idx])
     
     # Plot HFTX data - all 8 views
     for view_idx in range(8):
         hftx_frame = mvbvs['hftx'].view_images[frame_idx, view_idx, :, :]
-        im = axes[1, view_idx].imshow(hftx_frame, cmap='gray')
-        axes[1, view_idx].set_title(f'HFTX View {view_idx}')
-        axes[1, view_idx].axis('off')
+        im = axes[2, view_idx].imshow(hftx_frame, cmap='gray')
+        axes[2, view_idx].set_title(f'HFTX View {view_idx}')
+        axes[2, view_idx].axis('off')
+
+        mask = mvbvs['hftx'].view_masks[0, view_idx, :, :]
+        axes[3, view_idx].imshow(mask, cmap='gray')
+        axes[3, view_idx].set_title(f'HFTX Mask {view_idx}')
+        axes[3, view_idx].axis('off')
+
         # plt.colorbar(im, ax=axes[1, view_idx])
     
 

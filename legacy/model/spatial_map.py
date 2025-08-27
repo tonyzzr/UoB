@@ -168,6 +168,11 @@ class SpatialMapNet(nn.Module):
         tissue_map: [1, C, H, W]
     '''
 
+    image_tensor = image_tensor.float()
+    mask_tensor = mask_tensor.float()
+    grids = grids.float()
+
+
     registered_imgs = F.grid_sample(image_tensor, grids)
     registered_masks = F.grid_sample(mask_tensor, grids)
 
@@ -337,8 +342,9 @@ class PixelDomainOptimization:
 
         else:
           model.eval()
-          tissue_map = model(image_tensor, mask_tensor, normalized_transducer_position)
-          rela_poses_in_radian = model.rela_poses_in_radian
+          with torch.no_grad():
+            tissue_map = model(image_tensor, mask_tensor, normalized_transducer_position)
+            rela_poses_in_radian = model.rela_poses_in_radian
 
         tissue_maps[key] = tissue_map.detach().to('cpu').clone()
 
@@ -348,11 +354,14 @@ class PixelDomainOptimization:
       self.log_training_history(epoch,
                                 loss = loss.detach().cpu().item(),
                                 rela_poses_in_radian = rela_poses_in_radian.detach().cpu().numpy(),)
-      self.plot_training_status(key='loss', ax=ax[0, 0])
-      self.plot_pose_error_history(['se'], ax=ax[0, 1])
-      self.plot_tissue_maps(tissue_maps, ax=ax[1, :])
+      # self.plot_training_status(key='loss', ax=ax[0, 0])
+      # self.plot_pose_error_history(['se'], ax=ax[0, 1])
+      # self.plot_tissue_maps(tissue_maps, ax=ax[1, :])
 
-      display(fig)
+      # display(fig)
+      # plt.show(block=False)
+
+      # import pdb; pdb.set_trace()
 
 
     return tissue_maps

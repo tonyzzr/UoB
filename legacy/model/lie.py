@@ -7,8 +7,8 @@ def trans_mat2D(x, y):
   '''
     2D translation matrix works with homogenous coordinates.
   '''
-  x = torch.tensor(x).double()
-  y = torch.tensor(y).double()
+  x = torch.tensor(x)#.double()
+  y = torch.tensor(y)#.double()
 
   Gi = np.array([[1, 0, 0],
                  [0, 1, 0],

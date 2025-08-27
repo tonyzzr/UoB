@@ -33,7 +33,7 @@ def generate_mask(theta_v: np.ndarray, setting: Any) -> np.ndarray:
     if not setting.enable:
         return np.ones(theta_v.shape)
 
-    angle = setting.main_lobe_beamwidth
+    angle = setting.main_lobe_beamwidth / 2.0
 
     if setting.soft_boundary:
             mask = 1 - 1 / (1 + np.exp(-setting.softness * (theta_v - angle)))

@@ -12,13 +12,13 @@ scale_bar = 0.2682 # Adjusted to target height ~224px while maintaining aspect r
 # Settings for each processing step for LF
 [lftx.mask]
 enable = true
-main_lobe_beamwidth = 20.0
-soft_boundary = false
+main_lobe_beamwidth = 30.0
+soft_boundary = true
 softness = 0.5 # smaller the smoother
 
 [lftx.log_compression]
 enable = true
-dynamic_range = 60.0
+dynamic_range = 50.0
 # max_value = null # Or null/None if calculated per image
 
 [lftx.speckle_reduction]
@@ -40,8 +40,8 @@ enable = false
 # background_removal = true
 
 [lftx.time_gain_compensation]
-# enable = true
-enable = false
+enable = true
+# enable = false
 tgc_threshold = 0.75
 tgc_slope = 10.0
 
@@ -52,12 +52,12 @@ tgc_slope = 10.0
 [hftx.mask]
 enable = true
 main_lobe_beamwidth = 5.0 # Might differ from LF
-soft_boundary = false
+soft_boundary = true
 softness = 0.5
 
 [hftx.log_compression]
 enable = true
-dynamic_range = 60.0 # Might differ
+dynamic_range = 50.0 # Might differ
 
 [hftx.speckle_reduction]
 enable = true
@@ -79,6 +79,6 @@ enable = true
 enable = false # Keeping disabled for now
 
 [hftx.time_gain_compensation]
-enable = false
+enable = true
 tgc_threshold = 0.8
 tgc_slope = 12.0 

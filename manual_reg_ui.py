@@ -69,7 +69,6 @@ def main(recording_name:str = "recording_2022-08-17_trial2-arm"):
 
     return
 
-
 def find_transducer_edges_xy(mvbvs, tx_mode:str = 'lftx') -> tuple:
     '''
     Find the center of rotation of the views of the frame.
@@ -97,7 +96,10 @@ def apply_pose(mvbvs, frm4reg:int = 0,
     '''
     import cv2
 
-    reg_result = {}
+    reg_result = {
+        'lftx': {},
+        'hftx': {}
+    }
 
     for tx_mode in ['lftx', 'hftx']:
         mvbv = mvbvs[tx_mode]
@@ -125,20 +127,42 @@ def apply_pose(mvbvs, frm4reg:int = 0,
         rotate_trans_mat = cv2.getRotationMatrix2D((right_edge_x, right_edge_y), 
                                                     theta_degrees, 
                                                     scale=1.0)
+        rotate_trans_mat = np.concatenate([rotate_trans_mat, 
+                                                np.array([[0, 0, 1]])], axis=0)
         
         combined_trans_mat = rotate_trans_mat @ shift_trans_mat
-        view_2_rotated = cv2.warpAffine(view_2, 
-                                        combined_trans_mat, 
-                                        (w, h))
+        # view_2_rotated = cv2.warpAffine(view_2, 
+        #                                 combined_trans_mat, 
+        #                                 (w, h))
         
-        reg_result[tx_mode] = {
-            'view_1': view_1,
-            'view_2': view_2_rotated
-        }
+        from dynamic_canvas_creation import calculate_dynamic_canvas
+
+        images = [view_1, view_2]
+        homographies = [np.eye(3), combined_trans_mat]
+        (canvas_width, canvas_height), adjusted_homographies = calculate_dynamic_canvas(
+            images=images,
+            homographies=homographies
+        )
+
+        # Warp and blend each image
+        for i, (image, adjusted_H) in enumerate(zip(images, adjusted_homographies)):
+            # Warp image to canvas
+            warped_image = cv2.warpPerspective(
+                image.astype(np.float32), 
+                adjusted_H, 
+                (canvas_width, canvas_height)
+            )
+
+            reg_result[tx_mode][f'view_{i+1}'] = warped_image
+        
+        
+        # reg_result[tx_mode] = {
+        #     'view_1': view_1,
+        #     'view_2': view_2_rotated
+        # }
 
     return reg_result
   
-
 def register_views(mvbvs, frm4reg:int = 0, save_path:str = None) -> np.ndarray:
     '''
     Register the views of the frame. We will create a UI for this.
@@ -201,6 +225,11 @@ def register_views(mvbvs, frm4reg:int = 0, save_path:str = None) -> np.ndarray:
     for ax in [ax_lftx_pair, ax_hftx_pair, ax_lftx_rendered, ax_hftx_rendered]:
         ax.axis('off')
     
+
+    #########################################################
+    # Buttons and sliders
+    #########################################################
+
     # Create horizontal view pair selector above sliders
     pair_buttons = []
     pair_button_axes = []
@@ -308,6 +337,49 @@ def register_views(mvbvs, frm4reg:int = 0, save_path:str = None) -> np.ndarray:
         fig.canvas.draw_idle()
         update_visualization()
     
+    def create_panorama(images, masks, homographies, fuser='weighted_mean'):
+        import cv2
+        from dynamic_canvas_creation import calculate_dynamic_canvas
+
+        (canvas_width, canvas_height), adjusted_homographies = calculate_dynamic_canvas(
+            images=images,
+            homographies=homographies
+        )
+        warped_images = []
+        warped_masks = []
+
+        for i, (image, adjusted_H) in enumerate(zip(images, adjusted_homographies)):
+            # Warp image to canvas
+            warped_image = cv2.warpPerspective(
+                image.astype(np.float32), 
+                adjusted_H, 
+                (canvas_width, canvas_height)
+            )
+            warped_images.append(warped_image)
+
+            warped_mask = cv2.warpPerspective(
+                masks[i].astype(np.float32), 
+                adjusted_H, 
+                (canvas_width, canvas_height)
+            )
+            warped_masks.append(warped_mask)
+
+        import torch
+        warped_images_tensor = torch.from_numpy(np.stack(warped_images))
+        warped_masks_tensor = torch.from_numpy(np.stack(warped_masks))
+
+        from legacy.model.image_fusion import weighted_mean_fuser, mean_fuser
+
+        if fuser == 'weighted_mean':
+            panorama = weighted_mean_fuser(warped_images_tensor, 
+                                           warped_masks_tensor)
+        elif fuser == 'mean':
+            panorama = mean_fuser(warped_images_tensor)
+        else:
+            raise ValueError(f"Invalid fuser: {fuser}")
+        return panorama
+
+
     # Update functions
     def update_visualization():
         """Update all visualization panels based on current theta values"""
@@ -332,6 +404,58 @@ def register_views(mvbvs, frm4reg:int = 0, save_path:str = None) -> np.ndarray:
         ax_lftx_pair.imshow(combined_lftx)
         ax_lftx_pair.set_title(f'LFTX Views {current_pair},{current_pair+1}')
         ax_lftx_pair.axis('off')
+
+
+        #########################################################
+        # Rigid link model
+        #########################################################
+
+        # thetas -> Rigid link model -> transformation matrices
+        import torch
+        from legacy.model.rigid_link import RigidLink
+        from legacy.model.image_fusion import weighted_mean_fuser, mean_fuser
+
+        rl, panoramas = {}, {}
+        for tx_mode in ['lftx', 'hftx']:
+            mvbv = mvbvs[tx_mode]
+            rl[tx_mode] = RigidLink(n=n_views, 
+                                    length=mvbv.aperture_size)
+            rl[tx_mode].set_origin(mvbv.origin[0], mvbv.origin[1])
+            rl[tx_mode].set_thetas(torch.tensor(theta_values))
+            rl[tx_mode].calc_rela_poses()
+            rl[tx_mode].calc_global_poses()
+            rl[tx_mode].calc_joint_locations()
+            homographies = [
+                rl[tx_mode].global_poses[i].matrix()[[0,1,3],:][:, [0,1,3]].numpy() for i in range(n_views)
+            ]
+            # import pdb; pdb.set_trace()
+            images = [
+                mvbv.view_images[frm4reg, i, :, :].numpy() for i in range(n_views)
+            ]
+            masks = [
+                mvbv.view_masks[0, i, :, :].numpy() for i in range(n_views)
+            ]
+            # import pdb; pdb.set_trace()
+
+            panoramas[tx_mode] = create_panorama(images, masks, homographies)
+
+
+
+            #########################################################
+            # Create canvas
+            #########################################################
+
+            
+            
+            #########################################################
+            # Rendered panorama
+            #########################################################
+
+            
+            
+
+
+        # transformation matrices -> rendered panorama
         
         # Update HFTX pair
         ax_hftx_pair.clear()
@@ -348,19 +472,23 @@ def register_views(mvbvs, frm4reg:int = 0, save_path:str = None) -> np.ndarray:
         
         # TODO: Update rendered images (placeholder for now)
         ax_lftx_rendered.clear()
-        ax_lftx_rendered.text(0.5, 0.5, 'LFTX\nRendered\n(TODO)', 
-                              ha='center', va='center', transform=ax_lftx_rendered.transAxes)
+        ax_lftx_rendered.imshow(panoramas['lftx'], cmap='gray')
         ax_lftx_rendered.set_title('LFTX Rendered')
+
+        ax_lftx_rendered.axis('off')
         
         ax_hftx_rendered.clear()
-        ax_hftx_rendered.text(0.5, 0.5, 'HFTX\nRendered\n(TODO)', 
-                              ha='center', va='center', transform=ax_hftx_rendered.transAxes)
+        ax_hftx_rendered.imshow(panoramas['hftx'], cmap='gray')
         ax_hftx_rendered.set_title('HFTX Rendered')
+        ax_hftx_rendered.axis('off')
         
         # TODO: Update pose model (placeholder for now)
         ax_pose_model.clear()
-        ax_pose_model.text(0.5, 0.5, 'Pose Model\n(TODO)', 
-                           ha='center', va='center', transform=ax_pose_model.transAxes)
+        rl['lftx'].show_rigid_link(ax=ax_pose_model, 
+                                   axlim=(-mvbv.aperture_size, 
+                                          mvbv.aperture_size*10))
+        # ax_pose_model.text(0.5, 0.5, 'Pose Model\n(TODO)', 
+                        #    ha='center', va='center', transform=ax_pose_model.transAxes)
         ax_pose_model.set_title('Pose Model')
         
         fig.canvas.draw_idle()
@@ -452,7 +580,7 @@ def select_frame_for_registration(mvbvs) -> int:
     n_frames = mvbvs['lftx'].view_images.shape[0]
     n_views = mvbvs['lftx'].view_images.shape[1]
 
-    fig, axes = plt.subplots(2, n_views, figsize=(16, 6))
+    fig, axes = plt.subplots(4, n_views, figsize=(12, 9))
     plt.subplots_adjust(bottom=0.25)  # Make more space for the slider
 
     # Initial visualization
@@ -474,24 +602,12 @@ def select_frame_for_registration(mvbvs) -> int:
     def update_frame(val):
         frame_idx = int(frame_slider.val)
         # Clear the axes and redraw
-        for i in range(2):
+        for i in range(4):
             for j in range(n_views):
                 axes[i, j].clear()
                 axes[i, j].axis('off')
-        
-        # Update LFTX data - all views
-        for view_idx in range(n_views):
-            lftx_frame = mvbvs['lftx'].view_images[frame_idx, view_idx, :, :]
-            axes[0, view_idx].imshow(lftx_frame, cmap='gray')
-            axes[0, view_idx].set_title(f'LFTX View {view_idx}')
-            axes[0, view_idx].axis('off')
-        
-        # Update HFTX data - all views
-        for view_idx in range(n_views):
-            hftx_frame = mvbvs['hftx'].view_images[frame_idx, view_idx, :, :]
-            axes[1, view_idx].imshow(hftx_frame, cmap='gray')
-            axes[1, view_idx].set_title(f'HFTX View {view_idx}')
-            axes[1, view_idx].axis('off')
+
+        visualize_frame(mvbvs, frame_idx, axes)
             
         # Update the main title to show current frame
         fig.suptitle(f'Frame {frame_idx} (Total: {n_frames} frames)')
@@ -505,7 +621,6 @@ def select_frame_for_registration(mvbvs) -> int:
 
     return int(frame_slider.val)
     
-
 def get_available_recordings(dataset_dir: str = "data/processed") -> list:
     """
     Get a list of available recording names from the dataset directory.
@@ -526,7 +641,6 @@ def get_available_recordings(dataset_dir: str = "data/processed") -> list:
                 logging.warning(f"Directory {item} exists but doesn't contain combined_mvbv.pkl")
     
     return sorted(recordings)
-
 
 def select_recording_interactively() -> str:
     """
